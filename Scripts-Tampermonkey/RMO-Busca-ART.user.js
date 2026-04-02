@@ -5,15 +5,17 @@
 // @description  Orquestrador de buscas de ART 100% integrado ao Utils Data Mapper e UIFactory.
 // @author       P0nt4s
 // @match        https://mobile.creadf.org.br/sgf_web_21/www/*
+// @updateURL    https://raw.githubusercontent.com/P0NT4S/sistema-crea/main/Scripts-Tampermonkey/RMO-Busca-ART.user.js
+// @downloadURL  https://raw.githubusercontent.com/P0NT4S/sistema-crea/main/Scripts-Tampermonkey/RMO-Busca-ART.user.js
 // @grant        GM_xmlhttpRequest
 // @grant        GM_addStyle
 // @grant        GM_getResourceText
 // @grant        GM_openInTab
 // @grant        unsafeWindow
-// @require      https://gist.githubusercontent.com/MarcosMiguelSMachado/25cf1be688d416830898c4fc917c9b8e/raw/01104268ffecb4f1ef4914ff7673be0fb2bf9000/Utils-css.js
-// @require      https://gist.githubusercontent.com/MarcosMiguelSMachado/d87cc40f0113bc132ab1a91ec8e06269/raw/2abbd96d4142e56f5f00f96d009b0dec51e85609/UIFactory-css.js
-// @require      https://gist.githubusercontent.com/MarcosMiguelSMachado/9786c95596cfcc5193e6a90c9cad1609/raw/79a43c263d42149e7a0fe5c4fc6e7402fd04cbfb/CommBridge.js
-// @resource     P0nt4sTheme https://gist.githubusercontent.com/MarcosMiguelSMachado/afac48ed96e7d2f3134696deb05a525b/raw/8eb785ffda64a7db2c24c9bdb18f45f798f2c3da/P0nt4sTheme.css
+// @require      https://raw.githubusercontent.com/P0NT4S/sistema-crea/main/Libs/UIFactory.js
+// @require      https://raw.githubusercontent.com/P0NT4S/sistema-crea/main/Libs/Utils.js
+// @require      https://raw.githubusercontent.com/P0NT4S/sistema-crea/main/Libs/CommBridge.js
+// @resource     P0nt4sTheme https://raw.githubusercontent.com/P0NT4S/sistema-crea/main/Libs/P0nt4sTheme.css
 // ==/UserScript==
 
 (function() {
