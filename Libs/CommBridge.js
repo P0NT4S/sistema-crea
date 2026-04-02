@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Communication Bridge (HTTP API & ART - GM)
 // @namespace    https://github.com/P0NT4S/
-// @version      4.2
+// @version      4.2.1
 // @description  Camada de comunicação: API REST Local e Utilitários de Requisição para o CREA (ART).
 // @author       P0nt4s
 // @grant        GM_xmlhttpRequest
@@ -14,11 +14,28 @@
        CONFIGURAÇÕES DO SCRIPT
        ============================== */
     const CONFIG = {
-        API_LOCAL_URL: 'http://127.0.0.1:6969',
-        //API_ART_URL: 'https://art.creadf.org.br/art1025/publico/consultas_ret.php',
-        API_ART_URL: 'http://127.0.0.1:6969',
+        // Flag principal para alternar entre o Mock Server e o CREA oficial
+        MODO_TESTE: true, 
+        
+        // Mantemos sua API Local do FastAPI intacta
+        API_LOCAL_URL: 'http://127.0.0.1:6969', 
+        
+        // Mapeamento de URLs para facilitar a manutenção
+        URLS_ART: {
+            PRODUCAO: 'https://art.creadf.org.br/art1025/publico/consultas_ret.php',
+            TESTE: 'http://localhost:8989' // Aponta para o seu servidor Python (CatchAllHandler)
+        },
+
         HEADERS_PADRAO: {
             'Content-Type': 'application/json'
+        },
+
+        /**
+         * Retorna a URL base do CREA dinamicamente de acordo com o ambiente atual.
+         * @returns {string} URL de teste ou de produção.
+         */
+        get API_ART_URL() {
+            return this.MODO_TESTE ? this.URLS_ART.TESTE : this.URLS_ART.PRODUCAO;
         }
     };
 
