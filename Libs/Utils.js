@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Utils (Logic & Core)
-// @namespace    http://tampermonkey.net/
+// @namespace    https://github.com/P0NT4S/
 // @version      7.3.5
 // @description  Core de utilitários: Manipulação de Texto/Regex, DOM Helpers e Data Mapper do CREA.
 // @author       P0nt4s

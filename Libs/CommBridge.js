@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Communication Bridge (HTTP API & ART - GM)
-// @namespace    http://tampermonkey.net/
+// @namespace    https://github.com/P0NT4S/
 // @version      4.2
 // @description  Camada de comunicação: API REST Local e Utilitários de Requisição para o CREA (ART).
 // @author       P0nt4s
@@ -15,7 +15,8 @@
        ============================== */
     const CONFIG = {
         API_LOCAL_URL: 'http://127.0.0.1:6969',
-        API_ART_URL: 'https://art.creadf.org.br/art1025/publico/consultas_ret.php',
+        //API_ART_URL: 'https://art.creadf.org.br/art1025/publico/consultas_ret.php',
+        API_ART_URL: 'http://127.0.0.1:6969',
         HEADERS_PADRAO: {
             'Content-Type': 'application/json'
         }

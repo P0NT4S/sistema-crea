@@ -1,15 +1,17 @@
 // ==UserScript==
-// @name         RMO Registrador (v5.2)
-// @namespace    http://tampermonkey.net/
-// @version      5.2
+// @name         RMO Registrador (v5.2.0)
+// @namespace    https://github.com/P0NT4S/
+// @version      5.2.0
 // @description  Painel de Upsert de RMOs. Delegação de extração para Utils, FAB em modo toggle e API atualizada.
 // @author       P0nt4s
 // @match        https://mobile.creadf.org.br/sgf_web_21/www/*
+// @updateURL    https://raw.githubusercontent.com/P0NT4S/sistema-crea/main/Scripts-Tampermonkey/RMO-Registrador.user.js
+// @downloadURL  https://raw.githubusercontent.com/P0NT4S/sistema-crea/main/Scripts-Tampermonkey/RMO-Registrador.user.js
 // @grant        GM_xmlhttpRequest
-// @require      https://gist.githubusercontent.com/MarcosMiguelSMachado/a5d808f84366ed6169fc4ffd73e9f0ae/raw/ThemeCore.js
-// @require      https://gist.githubusercontent.com/MarcosMiguelSMachado/6a99a28dea832506c7dbcfe819bece45/raw/UIFactory.js
-// @require      https://gist.githubusercontent.com/MarcosMiguelSMachado/99893c72883edfe67435a4464136dc1e/raw/Utils.js
-// @require      https://gist.githubusercontent.com/MarcosMiguelSMachado/9786c95596cfcc5193e6a90c9cad1609/raw/CommBridge.js
+// @require      https://raw.githubusercontent.com/P0NT4S/sistema-crea/main/Libs/UIFactory.js
+// @require      https://raw.githubusercontent.com/P0NT4S/sistema-crea/main/Libs/Utils.js
+// @require      https://raw.githubusercontent.com/P0NT4S/sistema-crea/main/Libs/CommBridge.js
+// @resource     P0nt4sTheme https://raw.githubusercontent.com/P0NT4S/sistema-crea/main/Libs/P0nt4sTheme.css
 // ==/UserScript==
 
 (function() {

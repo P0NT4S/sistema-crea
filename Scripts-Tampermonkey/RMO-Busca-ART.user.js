@@ -1,6 +1,6 @@
 // ==UserScript==
-// @name         TESTE- RMO Caça ART (v9.8.0)
-// @namespace    http://tampermonkey.net/
+// @name         RMO Caça ART (v9.8.0)
+// @namespace    https://github.com/P0NT4S/
 // @version      9.8.0
 // @description  Orquestrador de buscas de ART 100% integrado ao Utils Data Mapper e UIFactory.
 // @author       P0nt4s

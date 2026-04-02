@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         UIFactory (Visual Components)
-// @namespace    http://tampermonkey.net/
+// @namespace    https://github.com/P0NT4S/
 // @version      6.0.1
 // @description  Biblioteca UI e Design System (.pts- namespace): Componentes interativos e Templates HTML padronizados.
 // @author       P0nt4s
