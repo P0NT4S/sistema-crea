@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Communication Bridge (HTTP API & ART - GM)
 // @namespace    https://github.com/P0NT4S/
-// @version      4.2.1
+// @version      4.2.2
 // @description  Camada de comunicação: API REST Local e Utilitários de Requisição para o CREA (ART).
 // @author       P0nt4s
 // @grant        GM_xmlhttpRequest
