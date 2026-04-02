@@ -16,7 +16,7 @@
     const CONFIG = {
         API_LOCAL_URL: 'http://127.0.0.1:6969',
         //API_ART_URL: 'https://art.creadf.org.br/art1025/publico/consultas_ret.php',
-        API_ART_URL: 'http://127.0.0.1:6969',
+        API_ART_URL: 'http://127.0.0.1:8989',
         HEADERS_PADRAO: {
             'Content-Type': 'application/json'
         }
