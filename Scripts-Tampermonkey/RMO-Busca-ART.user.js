@@ -47,7 +47,6 @@
         PANEL_ID: "caca-art-painel",
         PAGES_INITIAL_LIMIT: 5,
         PAGES_INCREMENT: 5,
-        API_ART_URL: "https://art.creadf.org.br/art1025/publico/consultas_ret.php"
     };
 
     if (!window.Utils || !window.Utils.crea || !window.UIFactory) {
@@ -76,6 +75,7 @@
        2. INTERFACE PRINCIPAL
        ========================================================================== */
     Log.init(`Caça ART ${CONFIG.SCRIPT_VERSION}`);
+    window.Comm.definirModoTeste(true);
     let isInitialized = false;
 
     function startApp() {
@@ -253,7 +253,7 @@
                 updateStatusMsg(container, `Analisando pág ${page}...`, 'loading');
 
                 const params = buildParams(page);
-                const url = `${CONFIG.API_ART_URL}?${params.toString()}`;
+                const url = `${window.Comm.urlBaseArt}?${params.toString()}`;
                 const response = await window.Comm.apiART.fetchAsync(url);
 
                 if (searchState.isCancelled) break;

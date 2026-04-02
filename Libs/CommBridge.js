@@ -112,6 +112,23 @@
        NAMESPACE PÚBLICO: CommBridge
        ========================================================================== */
     const CommBridge = {
+
+        /**
+         * Define se as requisições devem apontar para o Mock Server local ou para o CREA oficial.
+         * @param {boolean} status - true para ativar o ambiente de testes.
+         */
+        definirModoTeste(status) {
+            CONFIG.MODO_TESTE = !!status;
+            Log.warning("CommBridge", `Ambiente alterado. Modo de Teste: ${CONFIG.MODO_TESTE}`);
+        },
+
+        /**
+         * Retorna a URL base do CREA configurada para o ambiente atual.
+         * @returns {string} URL de destino das consultas.
+         */
+        get urlBaseArt() {
+            return CONFIG.API_ART_URL;
+        },
         
         /**
          * Módulo da API do CREA: Raspagem de dados e requisições para os sistemas da ART.
