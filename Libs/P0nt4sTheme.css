@@ -1,0 +1,360 @@
+/* ==========================================================================
+   P0nt4s Theme - UI KIT COMPLETO (Dark/Light Mode)
+   Namespace: .pts- (P0nt4s Design System)
+   ========================================================================== */
+
+/* --- 0. FONTE DE EMOJIS (Solução Nuclear Multi-OS) --- */
+
+/* Mac / iOS */
+@font-face {
+    font-family: 'ThemeEmoji';
+    src: local('Apple Color Emoji');
+    unicode-range: U+2139, U+2328, U+2600-26FF, U+2700-27BF, U+2B50, U+2B55, U+1F000-1FAFF;
+}
+/* Windows */
+@font-face {
+    font-family: 'ThemeEmoji';
+    src: local('Segoe UI Emoji');
+    unicode-range: U+2139, U+2328, U+2600-26FF, U+2700-27BF, U+2B50, U+2B55, U+1F000-1FAFF;
+}
+/* Linux / Android */
+@font-face {
+    font-family: 'ThemeEmoji';
+    src: local('Noto Color Emoji');
+    unicode-range: U+2139, U+2328, U+2600-26FF, U+2700-27BF, U+2B50, U+2B55, U+1F000-1FAFF;
+}
+
+/* --- 1. TEMA ESCURO (Padrão / Fallback) --- */
+:root {
+    --th-surface:       #1e293b;
+    --th-surface-dark:  #0f172a;
+    --th-surface-light: #334155;
+    
+    --th-text-main:  #e8edf1;
+    --th-text-muted: #5b6a7c;
+    --th-text-light:  #a8b2c2;
+    
+    --th-primary:       #8b5cf6; --th-primary-light: #a78bfa; --th-primary-dark: #7c3aed;
+    --th-success:       #10b981; --th-success-light: #34d399; --th-success-dark: #059669;
+    --th-error:         #ef4444; --th-error-light:   #f87171; --th-error-dark:    #dc2626;
+    --th-warning:       #fbbf24; --th-warning-light: #fcd34d; --th-warning-dark:  #f59e0b;
+    --th-info:          #38bdf8; --th-info-light:    #7dd3fc; --th-info-dark:     #0ea5e9;
+
+    /* Aliases Semânticos */
+    --th-bg:            var(--th-surface);
+    --th-bg-dark:       var(--th-surface-dark);
+    --th-bg-light:      var(--th-surface-light);
+    --th-text:          var(--th-text-main);
+
+    /* --- CONFIGURAÇÕES GLOBAIS DE UI --- */
+    --th-font: 'ThemeEmoji', 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --th-radius: 12px;
+    --th-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+/* --- 2. TEMA CLARO (Ativado via JS com data-theme="light") --- */
+:root[data-theme="light"] {
+    --th-surface:       #f8fafc;
+    --th-surface-dark:  #e2e8f0;
+    --th-surface-light: #ffffff;
+    
+    --th-text-main:  #0d1629;
+    --th-text-muted: #636f80;
+    --th-text-light:  #364363; 
+    
+    --th-primary:       #7c3aed; --th-primary-light: #8b5cf6; --th-primary-dark:  #6d28d9;
+    
+    --th-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* ==========================================================================
+   3. RESET E BASE
+   ========================================================================== */
+.pts-ui-root, .pts-panel { 
+    font-family: var(--th-font); 
+    box-sizing: border-box; 
+}
+
+.pts-ui-root *, .pts-panel * { 
+    box-sizing: border-box; 
+}
+
+.pts-ui-root ::-webkit-scrollbar, .pts-panel ::-webkit-scrollbar { width: 8px; height: 8px; }
+.pts-ui-root ::-webkit-scrollbar-track, .pts-panel ::-webkit-scrollbar-track { background: var(--th-bg-dark); border-radius: 4px; }
+.pts-ui-root ::-webkit-scrollbar-thumb, .pts-panel ::-webkit-scrollbar-thumb { background: var(--th-bg-light); border-radius: 4px; }
+
+/* ==========================================================================
+   4. PAINÉIS E MODAIS (.pts-panel)
+   ========================================================================== */
+.pts-panel {
+    font-family: var(--th-font);
+    position: fixed;
+    background: var(--th-bg);
+    color: var(--th-text);
+    border: 1px solid var(--th-bg-light);
+    border-radius: 16px;
+    box-shadow: var(--th-shadow);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    z-index: 99999;
+    min-width: 400px; max-width: 90vw;
+    opacity: 0; animation: ptsFadeIn 0.3s forwards;
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.pts-panel-header {
+    font-family: var(--th-font);
+    background: var(--th-bg-dark);
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--th-bg-light);
+    display: flex; justify-content: space-between; align-items: center;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.pts-panel-title { 
+    font-family: var(--th-font);
+    margin: 0; font-size: 16px; font-weight: 600; letter-spacing: 0.5px; 
+}
+
+.pts-panel-body { 
+    font-family: var(--th-font);
+    padding: 24px; max-height: 80vh; overflow-y: auto; 
+}
+
+.pts-panel--compact {
+    min-width: unset !important;
+    border-radius: 8px;
+}
+.pts-panel--compact .pts-panel-header { padding: 6px 12px; min-height: 30px; }
+.pts-panel--compact .pts-panel-title { font-size: 11px; }
+.pts-panel--compact .pts-panel-body { padding: 10px; font-size: 11px; }
+
+/* ==========================================================================
+   5. FORMULÁRIOS (.pts-input, .pts-label)
+   ========================================================================== */
+.pts-label { 
+    font-family: var(--th-font);
+    display: block; font-size: 11px; color: var(--th-text-light); 
+    margin-bottom: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; 
+    transition: color 0.3s ease;
+}
+
+.pts-input {
+    font-family: var(--th-font) !important;
+    width: 100%; padding: 12px;
+    border: 1px solid var(--th-bg-light);
+    border-radius: 8px;
+    font-size: 14px; color: var(--th-text);
+    background: var(--th-bg-light);
+    transition: all 0.2s, background-color 0.3s ease, color 0.3s ease;
+}
+.pts-input:focus { outline: none; border-color: var(--th-primary); box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2); }
+.pts-input::placeholder { color: var(--th-text-light); opacity: 0.5; font-family: var(--th-font); }
+
+/* ==========================================================================
+   6. BOTÕES (.pts-btn)
+   ========================================================================== */
+.pts-btn {
+    font-family: var(--th-font) !important;
+    padding: 12px 20px; border: none; border-radius: 8px;
+    font-size: 14px; font-weight: 700; text-transform: uppercase;
+    cursor: pointer; transition: transform 0.1s, background 0.2s, color 0.3s ease;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    color: #fff;
+}
+.pts-btn:active { transform: scale(0.98); }
+
+/* Variantes de Botão */
+.pts-btn--primary { background: var(--th-primary); color: white; }
+.pts-btn--primary:hover { background: var(--th-primary-light); }
+
+.pts-btn--danger { background: var(--th-error); color: white; }
+.pts-btn--danger:hover { background: var(--th-error-light); }
+
+.pts-btn--success { background: var(--th-success); color: white; }
+.pts-btn--success:hover { background: var(--th-success-light); }
+
+.pts-btn--info { background: var(--th-info); color: white; }
+.pts-btn--info:hover { background: var(--th-info-light); }
+
+.pts-btn--ghost { background: transparent; color: var(--th-text-muted); border: 1px solid var(--th-text-muted); }
+.pts-btn--ghost:hover { border-color: var(--th-text); color: var(--th-text); }
+
+.pts-btn--full { width: 100%; }
+
+/* Botões de Ícone */
+.pts-btn-icon {
+    background: transparent; border: none; cursor: pointer; padding: 8px;
+    color: var(--th-text); display: inline-flex; align-items: center; justify-content: center;
+    transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s;
+}
+.pts-btn-icon:hover { transform: scale(1.2); }
+.pts-btn-icon:focus { outline: none; }
+
+/* ==========================================================================
+   7. CARDS (.pts-card)
+   ========================================================================== */
+.pts-card {
+    background: var(--th-bg-light); border-radius: var(--th-radius);
+    padding: 12px; margin-bottom: 10px; border-left: 4px solid var(--th-primary);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: relative;
+    animation: ptsSlideIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    display: flex; flex-direction: column; gap: 4px;
+    transition: background-color 0.3s ease, border-left-color 0.3s ease;
+}
+.pts-card-header { display: flex; justify-content: space-between; align-items: flex-start; min-height: 20px; }
+.pts-card-title { font-weight: 700; font-size: 13px; color: var(--th-text); transition: color 0.3s ease; }
+.pts-card .pts-close-btn { font-size: 20px; margin-left: auto; position: static; }
+
+.pts-card--success { border-left-color: var(--th-success); }
+.pts-card--error   { border-left-color: var(--th-error); }
+.pts-card--warning { border-left-color: var(--th-warning); }
+.pts-card--info    { border-left-color: var(--th-info); }
+
+/* ==========================================================================
+   8. BADGES E ETIQUETAS (.pts-badge)
+   ========================================================================== */
+.pts-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; 
+    text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; color: var(--th-text);
+}
+.pts-badge--fill.variant-success { background: var(--th-success); color: white; }
+.pts-badge--fill.variant-warning { background: var(--th-warning); color: white; }
+.pts-badge--fill.variant-info    { background: var(--th-info);    color: white; }
+.pts-badge--fill.variant-error   { background: var(--th-error);   color: white; }
+.pts-badge--fill.variant-primary { background: var(--th-primary); color: white; }
+
+.pts-badge--outline { background: transparent; border: 1px solid currentColor; }
+.pts-badge--outline.variant-success { color: var(--th-success); }
+.pts-badge--outline.variant-error   { color: var(--th-error); }
+.pts-badge--outline.variant-warning { color: var(--th-warning); }
+.pts-badge--outline.variant-info    { color: var(--th-info); }
+.pts-badge--outline.variant-primary { color: var(--th-primary); }
+
+.pts-badge--ghost { background: rgba(100, 116, 139, 0.15); }
+.pts-badge--ghost.variant-success { color: var(--th-success); background: rgba(16, 185, 129, 0.15); }
+.pts-badge--ghost.variant-error   { color: var(--th-error);   background: rgba(239, 68, 68, 0.15); }
+.pts-badge--ghost.variant-warning { color: var(--th-warning); background: rgba(251, 191, 36, 0.15); }
+.pts-badge--ghost.variant-info    { color: var(--th-info);    background: rgba(56, 189, 248, 0.15); }
+
+/* ==========================================================================
+   9. TABELAS (.pts-table)
+   ========================================================================== */
+.pts-table-container {
+    width: 100%; overflow-x: auto; margin-bottom: 16px; border-radius: 8px; 
+    border: 1px solid var(--th-bg-light); background: var(--th-bg);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+.pts-table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
+.pts-table th {
+    background: var(--th-bg-dark); color: var(--th-text-light); font-weight: 700;
+    text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;
+    padding: 12px 16px; border-bottom: 2px solid var(--th-bg-light); border-right: 1px solid var(--th-bg-light);
+    white-space: nowrap; transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+.pts-table td {
+    padding: 12px 16px; border-right: 1px solid var(--th-bg-light); color: var(--th-text); vertical-align: middle;
+    transition: border-color 0.3s ease, color 0.3s ease;
+}
+.pts-table th:last-child, .pts-table td:last-child { border-right: none; }
+.pts-table tbody tr:nth-child(even) { background-color: rgba(0, 0, 0, 0.2); } 
+.pts-table tbody tr { transition: background-color 0.15s; }
+.pts-table tbody tr:hover { background-color: rgba(139, 92, 246, 0.1); } 
+.pts-table--compact th, .pts-table--compact td { padding: 8px 12px; font-size: 12px; }
+
+/* ==========================================================================
+   10. TABS / ABAS (.pts-tab)
+   ========================================================================== */
+.pts-tabs-container { display: flex; gap: 4px; border-bottom: 1px solid var(--th-bg-light); margin-bottom: 16px; transition: border-color 0.3s ease; }
+.pts-tab {
+    padding: 8px 16px; cursor: pointer; color: var(--th-text-light);
+    border-bottom: 2px solid transparent; transition: color 0.2s, border-color 0.2s;
+    display: flex; align-items: center; justify-content: center;
+}
+.pts-tab-label { font-size: 12px; font-weight: 600; transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1); transform-origin: center bottom; }
+.pts-tab:hover { color: var(--th-text); }
+.pts-tab:hover .pts-tab-label { transform: scale(1.2); }
+.pts-tab.active { color: var(--th-primary); border-bottom-color: var(--th-primary); }
+
+/* ==========================================================================
+   11. TOASTS / NOTIFICAÇÕES (.pts-toast)
+   ========================================================================== */
+.pts-toast-container { position: fixed; top: 20px; right: 20px; z-index: 100000; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+.pts-toast { 
+    font-family: var(--th-font); pointer-events: auto; background-color: var(--th-bg-light); 
+    color: var(--th-text); padding: 12px 16px; border-radius: 6px; min-width: 250px; 
+    font-size: 14px; font-weight: 500; box-shadow: 0 4px 10px rgba(0,0,0,0.3); 
+    animation: ptsSlideIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); transition: opacity 0.3s, transform 0.3s, background-color 0.3s ease; 
+    border-left: 4px solid var(--th-info); display: flex; align-items: center; gap: 10px; 
+}
+.pts-toast-out { opacity: 0; transform: translateX(100%); }
+
+.pts-toast--success { border-left-color: var(--th-success); }
+.pts-toast--error   { border-left-color: var(--th-error); }
+.pts-toast--warning { border-left-color: var(--th-warning); }
+.pts-toast--info    { border-left-color: var(--th-info); }
+.pts-toast--primary { border-left-color: var(--th-primary); }
+
+/* ==========================================================================
+   12. BOTÃO FLUTUANTE (.pts-btn-fab)
+   ========================================================================== */
+.pts-btn-fab { 
+    font-family: var(--th-font); position: fixed; bottom: 20px; right: 20px; width: 50px; height: 50px; 
+    border-radius: 50%; border: none; background: var(--th-primary); color: #fff; 
+    font-size: 20px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2); 
+    z-index: 9999; transition: transform 0.2s, background 0.2s; display: flex; align-items: center; justify-content: center; 
+}
+.pts-btn-fab:hover { transform: scale(1.1); background: var(--th-primary-light); }
+
+/* ==========================================================================
+   13. UTILITÁRIOS GLOBAIS
+   ========================================================================== */
+.pts-close-btn { background: transparent; border: none; color: var(--th-text-muted); cursor: pointer; font-size: 24px; font-weight: bold; padding: 4px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; transition: color 0.2s; }
+.pts-close-btn:hover { color: var(--th-error); }
+
+.pts-link { color: var(--th-info); text-decoration: none; cursor: pointer; font-weight: 500; transition: color 0.2s; }
+.pts-link:hover { color: var(--th-primary-light); text-decoration: underline; }
+.pts-link--subtle { color: var(--th-text-muted); font-size: 0.9em; }
+.pts-link--subtle:hover { color: var(--th-text); }
+
+.pts-truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; display: block; }
+
+/* Highlights e Copiáveis */
+.pts-highlight { background: var(--th-primary); color: #fff; padding: 0 3px; border-radius: 2px; font-weight: bold; }
+.pts-highlight--success { background: var(--th-success); color: white; }
+.pts-highlight--warning { background: var(--th-warning); color: #0d1629; }
+.pts-highlight--error   { background: var(--th-error); color: #fff; }
+.pts-highlight--info    { background: var(--th-info); color: #0d1629; }
+
+.pts-copy { cursor: pointer; color: var(--th-primary); font-weight: 600; transition: color 0.2s, opacity 0.2s; }
+.pts-copy:hover { opacity: 0.6; }
+.pts-copy--success { color: var(--th-success); }
+.pts-copy--warning { color: var(--th-warning); }
+.pts-copy--error   { color: var(--th-error); }
+.pts-copy--info    { color: var(--th-info); }
+
+/* Key-Value e Layout */
+.pts-kv-label { color: var(--th-text-light); font-size: 12px; font-weight: 600; margin-right: 5px; transition: color 0.3s ease; }
+.pts-kv-value { color: var(--th-text); font-size: 14px; transition: color 0.3s ease; }
+.pts-group { margin-bottom: 16px; }
+.pts-row { display: flex; gap: 15px; }
+.pts-col { flex: 1; }
+
+/* ==========================================================================
+   14. STATUS BOXES E ANIMAÇÕES
+   ========================================================================== */
+.pts-status-box { padding: 8px; border-radius: 6px; text-align: center; font-size: 12px; margin-bottom: 10px; font-weight: 600; }
+.pts-status-box--loading { background: rgba(100, 116, 139, 0.15); color: var(--th-text); animation: ptsPulse 1s infinite; }
+.pts-status-box--success { background: rgba(16, 185, 129, 0.15); color: var(--th-success); border: 1px solid var(--th-success); }
+.pts-status-box--warning { background: rgba(251, 191, 36, 0.15); color: var(--th-warning); border: 1px solid var(--th-warning); }
+.pts-status-box--error   { background: rgba(239, 68, 68, 0.15);   color: var(--th-error);   border: 1px solid var(--th-error); }
+.pts-status-box--info    { background: rgba(56, 189, 248, 0.15);  color: var(--th-info);    border: 1px solid var(--th-info); }
+
+@keyframes ptsSlideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes ptsFadeIn { from { opacity: 0; margin-top: -20px; } to { opacity: 1; margin-top: 0; } }
+@keyframes ptsPulse { 50% { opacity: 0.5; } }
+
+.pts-hover-scale { transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1); display: inline-flex; align-items: center; justify-content: center; }
+.pts-hover-scale:hover { transform: scale(1.2); }
+.pts-btn-inline { padding: 2px !important; vertical-align: middle; line-height: 1; }

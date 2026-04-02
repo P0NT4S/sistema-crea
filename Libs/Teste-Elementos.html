@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P0nt4s Design System - Showcase</title>
+    
+    <link rel="stylesheet" href="P0nt4sTheme.css">
+
+    <style>
+        /* Estilos apenas para organizar a página de testes, não fazem parte do UI Kit */
+        body { margin: 0; padding: 20px; background-color: var(--th-bg-dark); transition: background-color 0.3s; }
+        .showcase-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; margin-top: 20px; }
+        .showcase-section { background: var(--th-bg); padding: 20px; border-radius: 12px; border: 1px solid var(--th-bg-light); }
+        .showcase-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .demo-gap { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; }
+    </style>
+</head>
+<body class="pts-ui-root">
+
+    <div class="showcase-header">
+        <h1 style="color: var(--th-text); margin: 0; font-family: var(--th-font);">🎨 ThemeCore Showcase</h1>
+        <button class="pts-btn pts-btn--primary" onclick="toggleTheme()">
+            🌓 Alternar Tema (Dark/Light)
+        </button>
+    </div>
+
+    <div class="showcase-grid">
+
+        <div class="showcase-section">
+            <h3 style="color: var(--th-text-muted); margin-top: 0;">Botões (.pts-btn)</h3>
+            <div class="demo-gap">
+                <button class="pts-btn pts-btn--primary">Primary</button>
+                <button class="pts-btn pts-btn--success">Success</button>
+                <button class="pts-btn pts-btn--info">Info</button>
+                <button class="pts-btn pts-btn--danger">Danger</button>
+                <button class="pts-btn pts-btn--ghost">Ghost</button>
+            </div>
+
+            <div class="demo-gap" style="align-items: center;">
+                <span class="pts-kv-label">Botões de Ícone:</span>
+                <button class="pts-btn-icon" title="Editar">✏️</button>
+                <button class="pts-btn-icon" title="Excluir">🗑️</button>
+                <button class="pts-btn-icon" title="Configurações">⚙️</button>
+            </div>
+
+            <hr style="border-color: var(--th-bg-light); margin: 20px 0;">
+
+            <h3 style="color: var(--th-text-muted); margin-top: 0;">Formulários (.pts-input)</h3>
+            <div class="pts-group">
+                <label class="pts-label">Nome do Usuário</label>
+                <input type="text" class="pts-input" placeholder="Digite seu nome...">
+            </div>
+        </div>
+
+        <div class="showcase-section">
+            <h3 style="color: var(--th-text-muted); margin-top: 0;">Badges (.pts-badge)</h3>
+            <div class="demo-gap">
+                <span class="pts-badge pts-badge--fill variant-primary">Primary</span>
+                <span class="pts-badge pts-badge--fill variant-success">Success</span>
+                <span class="pts-badge pts-badge--fill variant-warning">Warning</span>
+                <span class="pts-badge pts-badge--fill variant-info">Info</span>
+                <span class="pts-badge pts-badge--fill variant-error">Error</span>
+            </div>
+            <div class="demo-gap">
+                <span class="pts-badge pts-badge--outline variant-success">Success Outline</span>
+                <span class="pts-badge pts-badge--ghost variant-info">Info Ghost</span>
+            </div>
+
+            <hr style="border-color: var(--th-bg-light); margin: 20px 0;">
+
+            <h3 style="color: var(--th-text-muted); margin-top: 0;">Status Boxes</h3>
+            <div class="pts-status-box pts-status-box--loading">⏳ Carregando dados do servidor...</div>
+            <div class="pts-status-box pts-status-box--info">ℹ️ Uma nova atualização está disponível.</div>
+            <div class="pts-status-box pts-status-box--success">✅ Operação realizada com sucesso!</div>
+        </div>
+
+        <div class="showcase-section">
+            <h3 style="color: var(--th-text-muted); margin-top: 0;">Cards (.pts-card)</h3>
+            
+            <div class="pts-card pts-card--info">
+                <div class="pts-card-header">
+                    <span class="pts-card-title">Card Informativo</span>
+                    <button class="pts-close-btn">&times;</button>
+                </div>
+                <div style="font-size: 13px; color: var(--th-text-main);">
+                    Este é um exemplo de card com a borda de info.
+                </div>
+            </div>
+
+            <div class="pts-card pts-card--warning">
+                <div class="pts-card-header">
+                    <span class="pts-card-title">Atenção Necessária</span>
+                </div>
+                <div style="font-size: 13px; color: var(--th-text-main);">
+                    Verifique os dados da <span class="pts-highlight pts-highlight--success">ART 123456</span> antes de continuar.
+                </div>
+            </div>
+
+            <hr style="border-color: var(--th-bg-light); margin: 20px 0;">
+            <h3 style="color: var(--th-text-light); margin-top: 0;">Key-Value & Utilities</h3>
+            <div class="pts-row">
+                <div class="pts-col">
+                    <div class="pts-kv-label">Processo:</div>
+                    <div class="pts-kv-value pts-copy pts-copy--primary" title="Copiar">2026.100.200</div>
+                </div>
+                <div class="pts-col">
+                    <div class="pts-kv-label">Status:</div>
+                    <div class="pts-kv-value"><a href="#" class="pts-link">Visualizar PDF</a></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="showcase-section">
+            <h3 style="color: var(--th-text-light); margin-top: 0;">Tabs & Tabelas</h3>
+            
+            <div class="pts-tabs-container">
+                <div class="pts-tab active" onclick="switchTab(this)">
+                    <span class="pts-tab-label">Registros</span>
+                </div>
+                <div class="pts-tab" onclick="switchTab(this)">
+                    <span class="pts-tab-label">Histórico</span>
+                </div>
+            </div>
+
+            <div class="pts-table-container">
+                <table class="pts-table pts-table--compact">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Profissional</th>
+                            <th>Situação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>101</td>
+                            <td>João da Silva</td>
+                            <td><span class="pts-badge pts-badge--ghost variant-success">Regular</span></td>
+                        </tr>
+                        <tr>
+                            <td>102</td>
+                            <td>Maria Oliveira</td>
+                            <td><span class="pts-badge pts-badge--ghost variant-error">Pendente</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <hr style="border-color: var(--th-bg-light); margin: 20px 0;">
+            
+            <h3 style="color: var(--th-text-light); margin-top: 0;">Disparar Toasts</h3>
+            <div class="demo-gap">
+                <button class="pts-btn-icon" style="font-size: 24px;" onclick="fireToast('success', 'Tudo certo!')">✅</button>
+                <button class="pts-btn-icon" style="font-size: 24px;" onclick="fireToast('error', 'Falha na conexão.')">❌</button>
+                <button class="pts-btn-icon" style="font-size: 24px;" onclick="fireToast('info', 'Nova mensagem recebida.')">ℹ️</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="pts-toast-container" id="toast-container"></div>
+
+    <button class="pts-btn-fab" title="Ação Principal">➕</button>
+
+    <div class="pts-panel" style="position: fixed; bottom: 20px; left: 20px; width: 350px; opacity: 1; animation: none;">
+        <div class="pts-panel-header">
+            <span class="pts-panel-title">Painel Flutuante</span>
+            <button class="pts-close-btn">&times;</button>
+        </div>
+        <div class="pts-panel-body">
+            Este é um exemplo de como o seu painel dragabble vai parecer flutuando sobre a interface do sistema.
+            <br><br>
+            <button class="pts-btn pts-btn--full pts-btn--primary">Confirmar</button>
+        </div>
+    </div>
+
+    <script>
+        // Lógica de Toggle de Tema simulando a UIFactory.ThemeManager
+        function toggleTheme() {
+            const html = document.documentElement;
+            if (html.getAttribute('data-theme') === 'light') {
+                html.removeAttribute('data-theme');
+            } else {
+                html.setAttribute('data-theme', 'light');
+            }
+        }
+
+        // Lógica simples de Abas
+        function switchTab(clickedTab) {
+            const tabs = document.querySelectorAll('.pts-tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            clickedTab.classList.add('active');
+        }
+
+        // Lógica de Toast simulando a UIFactory.ToastManager
+        function fireToast(type, msg) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const iconMap = { 'success': '✔', 'error': '✖', 'info': 'ℹ' };
+            toast.className = `pts-toast pts-toast--${type}`;
+            toast.innerHTML = `<span style="font-weight:bold">${iconMap[type]}</span> <span>${msg}</span>`;
+            
+            // Lógica de fechar no clique
+            toast.style.cursor = 'pointer';
+            toast.onclick = () => {
+                toast.classList.add('pts-toast-out');
+                setTimeout(() => toast.remove(), 300);
+            };
+
+            container.appendChild(toast);
+
+            // Auto-remover após 3 segundos
+            setTimeout(() => {
+                if(toast.parentElement) {
+                    toast.classList.add('pts-toast-out');
+                    setTimeout(() => toast.remove(), 300);
+                }
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
