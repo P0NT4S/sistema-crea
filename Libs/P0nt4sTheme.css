@@ -31,8 +31,8 @@
     --th-surface-light: #334155;
     
     --th-text-main:  #e8edf1;
-    --th-text-muted: #5b6a7c;
-    --th-text-light:  #a8b2c2;
+    --th-text-muted: #6a798d;
+    --th-text-light:  #abb5c5;
     
     --th-primary:       #8b5cf6; --th-primary-light: #a78bfa; --th-primary-dark: #7c3aed;
     --th-success:       #10b981; --th-success-light: #34d399; --th-success-dark: #059669;
@@ -58,9 +58,9 @@
     --th-surface-dark:  #e2e8f0;
     --th-surface-light: #ffffff;
     
-    --th-text-main:  #0d1629;
-    --th-text-muted: #636f80;
-    --th-text-light:  #364363; 
+    --th-text-main:  #0e1931;
+    --th-text-muted: #53647e;
+    --th-text-light:  #28355a; 
     
     --th-primary:       #7c3aed; --th-primary-light: #8b5cf6; --th-primary-dark:  #6d28d9;
     
@@ -357,4 +357,5 @@
 
 .pts-hover-scale { transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1); display: inline-flex; align-items: center; justify-content: center; }
 .pts-hover-scale:hover { transform: scale(1.2); }
+/* Para botões de ícone que ficam DENTRO de linhas de texto/cabeçalhos */
 .pts-btn-inline { padding: 2px !important; vertical-align: middle; line-height: 1; }

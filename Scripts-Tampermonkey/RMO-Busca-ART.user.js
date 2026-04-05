@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         RMO Caça ART (v9.8.0)
+// @name         RMO Busca ART (v9.8.0)
 // @namespace    https://github.com/P0NT4S/
 // @version      9.8.1
 // @description  Orquestrador de buscas de ART 100% integrado ao Utils Data Mapper e UIFactory.
@@ -422,7 +422,7 @@
                 T.keyValue("Data:", m.dataRegistro || "N/A")
             ])}
             <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(128, 128, 128, 0.25); display: flex; justify-content: space-between; align-items: flex-end; gap: 8px;">
-                <div style="font-size: 13px; color: var(--th-text-muted); line-height: 1.4; flex: 1;">📍 ${m.address}</div>
+                <div style="font-size: 13px; color: var(--th-text-light); line-height: 1.4; flex: 1;">📍 ${m.address}</div>
                 ${UI.createIconButton({ icon: 'ℹ', id: `btn-detalhes-${m.id}`, tooltip: 'Ver Detalhes', size: '16px' }).outerHTML}
             </div>
             <div class="detalhes-container" style="display: none; margin-top: 10px; border-top: 1px dashed rgba(128, 128, 128, 0.25); padding-top: 10px;"></div>
