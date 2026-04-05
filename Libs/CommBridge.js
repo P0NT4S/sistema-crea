@@ -40,7 +40,7 @@
     };
 
     const Log = window.Utils && window.Utils.log ? window.Utils.log : { 
-        success: console.log, info: console.log, error: console.error, warn: console.warn, primary: console.log 
+        success: console.log, info: console.log, error: console.error, warning: console.warning, primary: console.log 
     };
 
     const UI = window.UIFactory && window.UIFactory.toast ? window.UIFactory : {
@@ -80,7 +80,7 @@
                                     : erroJson.detail; 
                             }
                         } catch (e) {
-                            Log.warn(logContext, "O erro retornado pelo backend não é um JSON válido.", resposta.responseText);
+                            Log.warning(logContext, "O erro retornado pelo backend não é um JSON válido.", resposta.responseText);
                         }
 
                         Log.error(logContext, `Erro [${metodo}] ${endpoint}`, { status: resposta.status, msg: mensagemLimpa });
