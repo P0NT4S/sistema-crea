@@ -171,6 +171,9 @@
 .pts-btn--danger { background: var(--th-error); color: white; }
 .pts-btn--danger:hover { background: var(--th-error-light); }
 
+.pts-btn--warning { background: var(--th-warning); color: #0d1629; }
+.pts-btn--warning:hover { background: var(--th-warning-light); }
+
 .pts-btn--success { background: var(--th-success); color: white; }
 .pts-btn--success:hover { background: var(--th-success-light); }
 

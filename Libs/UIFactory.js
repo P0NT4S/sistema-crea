@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         UIFactory (OOP Components)
 // @namespace    https://github.com/P0NT4S/
-// @version      7.0.1
+// @version      7.0.2
 // @description  Biblioteca UI e Design System estruturada em Classes ES6+.
 // @author       P0nt4s
 // ==/UserScript==
@@ -410,18 +410,34 @@ class Panel extends ContainerBase {
             e.preventDefault();
             pos3 = e.clientX; pos4 = e.clientY;
             
+            // Fixa as coordenadas exatas e desliga âncoras CSS antes de começar a mover.
+            // Impede que o navegador tente "espremer" o painel ao chegar na borda.
+            const rect = this.el.getBoundingClientRect();
+            this.el.style.right = 'auto'; 
+            this.el.style.bottom = 'auto';
+            this.el.style.transform = 'none'; 
+            this.el.style.margin = '0';
+            this.el.style.left = rect.left + 'px'; 
+            this.el.style.top = rect.top + 'px';
+            
             document.onmouseup = () => { document.onmouseup = null; document.onmousemove = null; };
+            
             document.onmousemove = (e) => {
                 e.preventDefault();
                 pos1 = pos3 - e.clientX; pos2 = pos4 - e.clientY;
                 pos3 = e.clientX; pos4 = e.clientY;
                 
-                let newTop = Math.max(0, this.el.offsetTop - pos2);
-                let newLeft = Math.max(0, this.el.offsetLeft - pos1);
+                let newTop = this.el.offsetTop - pos2;
+                let newLeft = this.el.offsetLeft - pos1;
+                
+                // Impede que o cabeçalho suma pelo fundo, mas deixa o corpo vazar
+                newTop = Math.max(0, Math.min(newTop, window.innerHeight - this.titleNode.offsetHeight));
+                
+                // Trava no lado esquerdo (0), e na direita permite que 50% do painel saia da tela
+                newLeft = Math.max(0, Math.min(newLeft, window.innerWidth - (this.el.offsetWidth * 0.5)));
                 
                 this.el.style.top = newTop + "px";
                 this.el.style.left = newLeft + "px";
-                this.el.style.transform = 'none'; // Quebra o centralizador CSS padrão
             };
         };
     }
