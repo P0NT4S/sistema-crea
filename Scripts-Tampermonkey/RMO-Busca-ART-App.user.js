@@ -11,9 +11,9 @@
 // @grant        GM_addStyle
 // @grant        GM_getResourceText
 // @grant        GM_openInTab
-// @grant        unsafeWindow
 // @require      https://raw.githubusercontent.com/P0NT4S/sistema-crea/main/Libs/UIFactory.js
 // @require      https://raw.githubusercontent.com/P0NT4S/sistema-crea/main/Libs/Utils.js
+// @require      https://raw.githubusercontent.com/P0NT4S/sistema-crea/main/Libs/CreaHelper.js
 // @require      https://raw.githubusercontent.com/P0NT4S/sistema-crea/main/Libs/CommBridge.js
 // @require      https://raw.githubusercontent.com/P0NT4S/sistema-crea/main/Busca-ART-Domain.js
 // @require      https://raw.githubusercontent.com/P0NT4S/sistema-crea/main/Busca-ART-Service.js
@@ -54,24 +54,31 @@
     function startApp() {
         if (isInitialized) return;
 
-        // Abortamos caso as dependências vitais de injeção (Libs) não tenham sido carregadas via raw content.
-        if (!window.Utils || !window.Utils.crea || !window.UIFactory || !window.Comm) {
-            console.error("[Caça-ART] Erro Crítico: Bibliotecas base não carregadas remotamente.");
+        // Como você refatorou as Libs para POO puro, os objetos \`window.Utils\` mágicos pararam de existir.
+        // Precisamos instanciar as Fundações da arquitetura nativamente na raiz do App Tampermonkey:
+        if (typeof CoreUtils === "undefined" || typeof UIFacade === "undefined" || typeof CommBridge === "undefined") {
+            console.error("[Caça-ART] Erro Crítico: As classes brutas das Libs não foram carregadas via @require.");
             return;
         }
 
-        isInitialized = true;
-        window.Utils.log.init(`Caça ART V2 (Start)`);
-        window.Comm.definirModoTeste(true);
-        if (window.UIFactory.theme && window.UIFactory.theme.init) window.UIFactory.theme.init();
+        const appUtils = new CoreUtils({ logName: "Caça-ART" });
+        appUtils.crea = new CreaHelper(appUtils);
+        
+        const appUIFactory = new UIFacade(appUtils);
+        const appCommBridge = new CommBridge(appUtils, appUIFactory);
 
-        // 1. Empacotamos todas as libs base que rodavam aleatóriamente no código espaguete, 
-        // a fim de injetá-las uniformemente no ROOT do Controller.
+        isInitialized = true;
+        appUtils.log.success("Status", "Injeção de Bibliotecas POO concluída.");
+        appCommBridge.definirModoTeste(true);
+
+        if (ThemeManager) ThemeManager.init(); // Vem da Lib UIFactory
+
+        // Empacotamos as instâncias limpas (Singleton behavior local) para o orquestrador.
         const appDependencies = {
-            UIFactory: window.UIFactory,
-            Utils: window.Utils,
-            CommBridge: window.Comm,
-            creaHelper: window.Utils.crea
+            UIFactory: appUIFactory,
+            Utils: appUtils,
+            CommBridge: appCommBridge,
+            creaHelper: appUtils.crea
         };
 
         try {

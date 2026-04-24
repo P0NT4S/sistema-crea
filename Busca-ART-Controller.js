@@ -37,8 +37,8 @@ class BuscaARTController {
     }
 
     inicializar() {
-        this._UI.createFab('🔍', "Alternar Caça ART", 'caca-art-painel', () => {
-            if (!document.getElementById('caca-art-painel')) {
+        this._UI.createFab('🔍', "Alternar Caça ART", () => {
+            if (!document.getElementById('caca-art-painel') && !document.getElementById('form-address')) {
                 this._injetarInterfaceNoDOM();
             }
         });
@@ -116,51 +116,36 @@ class BuscaARTController {
        -------------------------------------------------------------------------- */
 
     _injetarInterfaceNoDOM() {
-        const T = this._UI.templates;
         const autoData = this._extrairDadosContextuaisCasoExistaRmoAberto();
 
-        // Arrow function ajudante pra envolver Elements HTMl brutos em interfaces .getValue() consumíveis limpas
-        const wrap = (el) => ({
-            getValue: () => el.value,
-            setDisabled: (d) => { el.disabled = d; if(d) el.classList.add('input-locked'); else el.classList.remove('input-locked'); }
+        // Fazemos uso nativo e limpo dos componentes UI baseados em Classes
+        const formEnd = new FormularioBusca(this._UI, 'address', '📍 Por Endereço', (ctx, inputs, ui) => {
+            inputs.logradouro = ui.createInput(ctx, "Logradouro", "", "text", autoData.logradouro);
+            inputs.bairro = ui.createInput(ctx, "Bairro", "", "text", autoData.bairro);
+            
+            // Componentes que vão ocupar a Row devem nascer sem parent inicialmente para não bagunçar o DOM tree
+            inputs.numeros = ui.createInput(null, "Filtros Opcionais (CSV)", 'Ex: 10, conj, "lote a"', "text", autoData.numeros);
+            inputs.pagina = ui.createInput(null, "Pág. Inicial", "", "number", "1");
+            
+            ui.createFlexRow(ctx, [inputs.numeros, inputs.pagina]);
         });
 
-        const formEnd = new FormularioBusca(this._UI, 'address', '📍 Por Endereço', (ctx, inputs) => {
-            ctx.innerHTML = `
-                ${T.formInput({ label: "Logradouro", id: "inp-log", value: autoData.logradouro })}
-                ${T.formInput({ label: "Bairro", id: "inp-bai", value: autoData.bairro })}
-                ${T.flexRow([
-                    { flex: 2, html: T.formInput({ label: "Filtros (CSV)", id: "inp-num", placeholder: 'Ex: 10, conj, "lote a"', value: autoData.numeros }) },
-                    { flex: 1, html: T.formInput({ label: "Pág. Inicial", id: "inp-pg-addr", type: "number", value: "1", min: "1" }) }
-                ])}
-            `;
-            const g = id => ctx.querySelector(`#${id}`);
-            inputs.logradouro = wrap(g('inp-log')); inputs.bairro = wrap(g('inp-bai'));
-            inputs.numeros = wrap(g('inp-num')); inputs.pagina = wrap(g('inp-pg-addr'));
+        const formCont = new FormularioBusca(this._UI, 'contract', '📄 Por Contrato', (ctx, inputs, ui) => {
+            inputs.cnpj = ui.createInput(ctx, "CNPJ do Contratante", "Ex: 00.000.000/0001-00", "text", "");
+            
+            inputs.contrato = ui.createInput(null, "Contrato/Ano", "Ex: 203/2025", "text", "");
+            inputs.pagina = ui.createInput(null, "Pág. Inicial", "", "number", "1");
+            
+            ui.createFlexRow(ctx, [inputs.contrato, inputs.pagina]);
         });
 
-        const formCont = new FormularioBusca(this._UI, 'contract', '📄 Por Contrato', (ctx, inputs) => {
-            ctx.innerHTML = `
-                ${T.formInput({ label: "CNPJ do Contratante", id: "inp-cnpj", placeholder: "Ex: 00.000.000/0001-00" })}
-                ${T.flexRow([
-                    { flex: 2, html: T.formInput({ label: "Contrato/Ano", id: "inp-ctr", placeholder: "Ex: 203/2025" }) },
-                    { flex: 1, html: T.formInput({ label: "Pág. Inicial", id: "inp-pg-ctr", type: "number", value: "1", min: "1" }) }
-                ])}
-            `;
-            const g = id => ctx.querySelector(`#${id}`);
-            inputs.cnpj = wrap(g('inp-cnpj')); inputs.contrato = wrap(g('inp-ctr')); inputs.pagina = wrap(g('inp-pg-ctr'));
-        });
-
-        const formDoc = new FormularioBusca(this._UI, 'document', '👤 Por CPF/CNPJ', (ctx, inputs) => {
-            ctx.innerHTML = `
-                ${T.formInput({ label: "CPF ou CNPJ", id: "inp-doc", placeholder: "Ex: 00.000.000/0001-00" })}
-                ${T.flexRow([
-                    { flex: 2, html: T.formInput({ label: "Filtro de Endereço Opcional", id: "inp-end", placeholder: 'Ex: 10, conj, "lote a"' }) },
-                    { flex: 1, html: T.formInput({ label: "Pág. Inicial", id: "inp-pg-doc", type: "number", value: "1", min: "1" }) }
-                ])}
-            `;
-            const g = id => ctx.querySelector(`#${id}`);
-            inputs.docCpfCnpj = wrap(g('inp-doc')); inputs.enderecoOpcional = wrap(g('inp-end')); inputs.pagina = wrap(g('inp-pg-doc'));
+        const formDoc = new FormularioBusca(this._UI, 'document', '👤 Por CPF/CNPJ', (ctx, inputs, ui) => {
+            inputs.docCpfCnpj = ui.createInput(ctx, "CPF ou CNPJ", "Ex: 000.000.000-00", "text", "");
+            
+            inputs.enderecoOpcional = ui.createInput(null, "Filtro de Endereço Opcional", 'Ex: lote, 35', "text", "");
+            inputs.pagina = ui.createInput(null, "Pág. Inicial", "", "number", "1");
+            
+            ui.createFlexRow(ctx, [inputs.enderecoOpcional, inputs.pagina]);
         });
 
         this._painelUI.construirPainel([formEnd, formCont, formDoc]);
@@ -174,7 +159,7 @@ class BuscaARTController {
         const totalStr = (estadoPaginacaoAtual.totalPaginas !== Infinity) ? ` de ${estadoPaginacaoAtual.totalPaginas}` : '';
         const btn = document.createElement('button');
         btn.id = 'art-btn-continue';
-        btn.className = 'my-btn pts-btn--ghost my-col';
+        btn.className = 'pts-btn pts-btn--ghost';
         btn.style.marginTop = "10px";
         btn.style.width = "100%";
         btn.innerHTML = `🔄 Continuar (Próxima Pág: ${estadoPaginacaoAtual.paginaAtual}${totalStr})`;
