@@ -267,12 +267,12 @@ class CardResultado {
         const rootContent = document.createElement('div');
         
         const kvNode = document.createElement('div');
-        kvNode.innerHTML = `<span class="pts-kv-label" style="font-weight:bold;">Proprietário:</span> <span class="pts-kv-value">${this._dadosART.proprietario || "N/A"}</span>`;
+        kvNode.innerHTML = `<span class="pts-kv-label" style="font-weight:bold;">Proprietário:</span> <span class="pts-kv-value">${this._dadosART.owner || "N/A"}</span>`;
         rootContent.appendChild(kvNode);
 
         const rowDiv = document.createElement('div');
         rowDiv.style.cssText = "margin-top: 8px; border-top: 1px solid rgba(128,128,128,0.25); display: flex; justify-content: space-between; align-items: center; padding-top: 8px;";
-        rowDiv.innerHTML = `<div style="font-size: 13px; color: var(--th-text-muted);">📍 ${this._dadosART.endereco}</div>`;
+        rowDiv.innerHTML = `<div style="font-size: 13px; color: var(--th-text-muted);">📍 ${this._dadosART.address || "N/A"}</div>`;
         rootContent.appendChild(rowDiv);
         
         const btnAnchor = document.createElement('div');
@@ -285,7 +285,7 @@ class CardResultado {
         containerDetalhes.style.cssText = "display: none; margin-top: 10px; border-top: 1px dashed rgba(128,128,128,0.25); padding-top: 10px;";
         rootContent.appendChild(containerDetalhes);
 
-        const cardObj = this._uiFacade.createCard(null, { title: this._dadosART.numeroART, content: rootContent, variant: 'success' });
+        const cardObj = this._uiFacade.createCard(null, { title: this._dadosART.artNum, content: rootContent, variant: 'success' });
         this._cardElement = cardObj.getNode();
 
         return this._cardElement;
@@ -305,7 +305,7 @@ class CardResultado {
         if (!this._detalhesInstancia) {
             botaoObjFacade.setIcon('⏳');
             try {
-                const html = await this._commBridge.apiART.fetchText(this._dadosART.urlImpressao);
+                const html = await this._commBridge.apiART.fetchText(this._dadosART.url);
                 const dadosProfundos = this._creaHelper.parser.parseDetalhe(html);
                 
                 this._detalhesInstancia = new DetalhesCardResultado(this._uiFacade, dadosProfundos, this._creaHelper.rmo);
