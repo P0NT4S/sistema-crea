@@ -98,7 +98,7 @@ class FiltroPorEndereco extends FiltroGeralBase {
     }
 
     async processarPagina(htmlDaPagina, rmoIdAtual, estadoAtual) {
-        const extraido = this._Utils.crea.parseListaARTs(htmlDaPagina);
+        const extraido = this._Utils.crea.parser.parseLista(htmlDaPagina);
         const matches = [];
 
         for (let i = 0; i < extraido.arts.length; i++) {
@@ -159,7 +159,7 @@ class FiltroPorContrato extends FiltroGeralBase {
     }
 
     async processarPagina(htmlDaPagina, rmoIdAtual, estadoAtual) {
-        const extraido = this._Utils.crea.parseListaARTs(htmlDaPagina);
+        const extraido = this._Utils.crea.parser.parseLista(htmlDaPagina);
         const matches = [];
 
         for (let i = 0; i < extraido.arts.length; i++) {
@@ -170,9 +170,9 @@ class FiltroPorContrato extends FiltroGeralBase {
             try {
                 // Mergulho profundo (Lazy Fetch nativo da camada de domínio)
                 const detailHtml = await this._CommBridge.apiART.fetchText(art.urlImpressao);
-                const detalhes = this._Utils.crea.parseDetalheART(detailHtml);
+                const detalhes = this._Utils.crea.parser.parseDetalhe(detailHtml);
 
-                const checkResult = this._Utils.crea.checkContractDeep(detalhes, this.anoContrato, this.regexContrato);
+                const checkResult = this._Utils.crea.parser.checkContractDeep(detalhes, this.anoContrato, this.regexContrato);
 
                 if (checkResult.match) {
                     matches.push({
@@ -225,7 +225,7 @@ class FiltroPorDocumento extends FiltroGeralBase {
     }
 
     async processarPagina(htmlDaPagina, rmoIdAtual, estadoAtual) {
-        const extraido = this._Utils.crea.parseListaARTs(htmlDaPagina);
+        const extraido = this._Utils.crea.parser.parseLista(htmlDaPagina);
         const matches = [];
 
         for (let i = 0; i < extraido.arts.length; i++) {
