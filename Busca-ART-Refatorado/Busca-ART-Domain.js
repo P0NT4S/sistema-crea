@@ -137,7 +137,7 @@ class FiltroPorContrato extends FiltroGeralBase {
         if (!cnpjRaw || !ctrRaw) throw new Error("Preencha CNPJ e Contrato/Ano!");
         if (ctrRaw.split('/').length !== 2) throw new Error("Formato inválido. Use CONTRATO/ANO.");
 
-        this.cnpjLimpo = this._Utils.format.apenasNumeros(cnpjRaw);
+        this.cnpjLimpo = this._Utils.text.apenasNumeros(cnpjRaw);
         if (this.cnpjLimpo.length === 0) throw new Error("CNPJ inválido.");
 
         const parts = ctrRaw.split('/');
@@ -206,7 +206,7 @@ class FiltroPorDocumento extends FiltroGeralBase {
         const docRaw = input.docCpfCnpj && input.docCpfCnpj.trim();
         if (!docRaw) throw new Error("Preencha o CPF ou CNPJ!");
 
-        this.docLimpo = this._Utils.format.apenasNumeros(docRaw);
+        this.docLimpo = this._Utils.text.apenasNumeros(docRaw);
         if (this.docLimpo.length !== 11 && this.docLimpo.length !== 14) {
             throw new Error("Documento inválido. Deve ter 11 (CPF) ou 14 (CNPJ) dígitos.");
         }

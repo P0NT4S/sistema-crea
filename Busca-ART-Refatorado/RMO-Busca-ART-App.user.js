@@ -1,12 +1,12 @@
 // ==UserScript==
 // @name         RMO Busca ART (V2 - Arquitetura POO)
 // @namespace    https://github.com/P0NT4S/
-// @version      10.0.1
+// @version      10.0.2
 // @description  Orquestrador de buscas de ART 100% repaginado para arquitetura POO/MVC e Motor Assíncrono isolado.
 // @author       P0nt4s
 // @match        https://mobile.creadf.org.br/sgf_web_21/www/*
-// @updateURL    https://raw.githubusercontent.com/P0NT4S/sistema-crea/main/Scripts-Tampermonkey/RMO-Busca-ART-App.user.js
-// @downloadURL  https://raw.githubusercontent.com/P0NT4S/sistema-crea/main/Scripts-Tampermonkey/RMO-Busca-ART-App.user.js
+// @updateURL    https://raw.githubusercontent.com/P0NT4S/sistema-crea/main/Busca-ART-Refatorado/RMO-Busca-ART-App.user.js
+// @downloadURL  https://raw.githubusercontent.com/P0NT4S/sistema-crea/main/Busca-ART-Refatorado/RMO-Busca-ART-App.user.js
 // @grant        GM_xmlhttpRequest
 // @grant        GM_addStyle
 // @grant        GM_getResourceText
@@ -15,21 +15,21 @@
 // @require      https://raw.githubusercontent.com/P0NT4S/sistema-crea/main/Libs/Utils.js
 // @require      https://raw.githubusercontent.com/P0NT4S/sistema-crea/main/Libs/CreaHelper.js
 // @require      https://raw.githubusercontent.com/P0NT4S/sistema-crea/main/Libs/CommBridge.js
-// @require      https://raw.githubusercontent.com/P0NT4S/sistema-crea/main/Busca-ART-Domain.js
-// @require      https://raw.githubusercontent.com/P0NT4S/sistema-crea/main/Busca-ART-Service.js
-// @require      https://raw.githubusercontent.com/P0NT4S/sistema-crea/main/Busca-ART-GUI.js
-// @require      https://raw.githubusercontent.com/P0NT4S/sistema-crea/main/Busca-ART-Controller.js
+// @require      https://raw.githubusercontent.com/P0NT4S/sistema-crea/main/Busca-ART-Refatorado/Busca-ART-Domain.js
+// @require      https://raw.githubusercontent.com/P0NT4S/sistema-crea/main/Busca-ART-Refatorado/Busca-ART-Service.js
+// @require      https://raw.githubusercontent.com/P0NT4S/sistema-crea/main/Busca-ART-Refatorado/Busca-ART-GUI.js
+// @require      https://raw.githubusercontent.com/P0NT4S/sistema-crea/main/Busca-ART-Refatorado/Busca-ART-Controller.js
 // @resource     P0nt4sTheme https://raw.githubusercontent.com/P0NT4S/sistema-crea/main/Libs/P0nt4sTheme.css
 // ==/UserScript==
 
-(function() {
+(function () {
     'use strict';
 
     /* ==========================================================================
        INJEÇÃO DO DESIGN SYSTEM (P0nt4sTheme)
        ========================================================================== */
     const themeCss = typeof GM_getResourceText !== "undefined" ? GM_getResourceText("P0nt4sTheme") : "";
-    
+
     // Pequenos ajustes de CSS específicos para o plugin
     const customCss = `
         .art-link-title { font-weight: bold !important; font-family: monospace; font-size: 18px; }
@@ -47,7 +47,7 @@
     /* ==========================================================================
        INICIALIZAÇÃO DO CONTROLLER (STARTUP POINT)
        ========================================================================== */
-       
+
     // Flag protetora para evitar múltiplas execuções no Tampermonkey se o match pegar iframes filhos
     let isInitialized = false;
 
@@ -63,7 +63,7 @@
 
         const appUtils = new CoreUtils({ logName: "Caça-ART" });
         appUtils.crea = new CreaHelper(appUtils);
-        
+
         const appUIFactory = new UIFacade(appUtils);
         const appCommBridge = new CommBridge(appUtils, appUIFactory);
 
