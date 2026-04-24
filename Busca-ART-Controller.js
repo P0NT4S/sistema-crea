@@ -79,7 +79,7 @@ class BuscaARTController {
             this._estadoAtualBusca = new EstadoPaginacao(pagInicial, PICS_LIMITE);
 
             // C. Injetar a estratégia e o limite no motor e acelerar!
-            const rmoAtiva = this._Utils.crea.extrairIdRmo(document) || "";
+            const rmoAtiva = this._extrairRmoAtiva();
             await this._motorServico.iniciarAssincrono(this._estrategiaAtual, this._estadoAtualBusca, rmoAtiva);
 
         } catch (erroRegraDeNegocio) {
@@ -186,13 +186,39 @@ class BuscaARTController {
             this._painelUI.bloquearInputs(true);
             // Re-acelera o motor injetando o exato momento pausado anteriormente!
             this._estadoAtualBusca.paginaLimite = (this._estadoAtualBusca.paginaAtual + 5) - 1; // Expande limite pra mais ciclo
-            this._motorServico.iniciarAssincrono(this._estrategiaAtual, this._estadoAtualBusca, this._Utils.crea.extrairIdRmo(document));
+            this._motorServico.iniciarAssincrono(this._estrategiaAtual, this._estadoAtualBusca, this._extrairRmoAtiva());
         };
         
         c.appendChild(btn);
     }
 
+    _extrairRmoAtiva() {
+        // Tenta buscar no Angular State Engine primariamente
+        const dadosGerais = this._creaHelper.rmo.getDadosRmo('geral');
+        if (dadosGerais && dadosGerais.id) return String(dadosGerais.id);
+        
+        // Fallback: Tenta ler o state do Angular pelo Hash Router (Ionic navigation)
+        try {
+            const match = window.location.hash.match(/rmo(?:\/|-novo\/)(\d+)/);
+            if (match) return match[1];
+        } catch(e) {}
+        
+        return "";
+    }
+
     _extrairDadosContextuaisCasoExistaRmoAberto() {
+        const endData = this._creaHelper.rmo.getDadosRmo('endereco');
+        if (endData && endData.endereco) {
+            const strNums = `${endData.endereco} ${endData.numeroEnd || ''} ${endData.complemento || ''}`;
+            const nums = strNums.match(/\d+/g);
+            return { 
+                logradouro: endData.endereco || "", 
+                bairro: "", 
+                numeros: nums ? [...new Set(nums)].join(", ") : "" 
+            };
+        }
+
+        // Fallback: Varredura de DOM bruto legada, caso Angular não engate form.
         const g = n => { const e = document.querySelector(`input[formcontrolname="${n}"]`); return e ? e.value : ""; };
         const nums = (`${g('endereco')} ${g('numeroEnd')} ${g('complemento')}`).match(/\d+/g);
         return { logradouro: g('endereco')||"", bairro:"", numeros: nums?[...new Set(nums)].join(", "):"" };
