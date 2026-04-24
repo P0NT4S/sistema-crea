@@ -84,20 +84,29 @@ class ConteinerFormulariosBusca {
     render() {
         if (this._formularios.length === 0) throw new Error("Nenhum formulário adicionado ao contêiner.");
 
+        // Corrigido: Usar container div flexível nativamente ao invés do template HTML morto
+        const panelBodyWrapper = document.createElement('div');
+        panelBodyWrapper.innerHTML = `
+            <div id="forms-container"></div>
+            <div id="divider-anchor"></div>
+            <div class="my-row" style="margin-top: 10px; display: flex; gap: 15px;">
+                <button id="art-btn-search" class="pts-btn pts-btn--primary" style="flex: 1;">🔍 Pesquisar</button>
+                <button id="art-btn-cancel" class="pts-btn pts-btn--error" style="display:none; flex: 1;">⛔ Parar Busca</button>
+            </div>
+            <div id="art-results-container" style="margin-top: 20px;"></div>
+        `;
+
         this.panelInstance = this._uiFacade.createPanel({
             id: 'caca-art-painel', title: "🕵️ Buscar ARTs", width: "550px", draggable: true, persist: true, closeButton: true,
-            html: `
-                <div id="forms-container"></div>
-                ${this._uiFacade.templates.divider('', 'none')}
-                <div class="my-row" style="margin-top: 10px;">
-                    <button id="art-btn-search" class="my-btn my-btn--primary my-col">🔍 Pesquisar</button>
-                    <button id="art-btn-cancel" class="my-btn my-btn--danger my-col" style="display:none;">⛔ Parar Busca</button>
-                </div>
-                <div id="art-results-container" style="margin-top: 20px;"></div>
-            `
+            content: panelBodyWrapper
         });
 
-        const formsContainer = this.panelInstance.querySelector('#forms-container');
+        // Injeta o divider nativo do UIFactory via Object e faz Mount visual
+        const divider = this._uiFacade.createDivider(null, '', 'none');
+        const anchor = panelBodyWrapper.querySelector('#divider-anchor');
+        anchor.appendChild(divider.getNode());
+
+        const formsContainer = panelBodyWrapper.querySelector('#forms-container');
         this._formularios.forEach(form => formsContainer.appendChild(form.getNode()));
         
         this._construirAbas();
@@ -109,8 +118,8 @@ class ConteinerFormulariosBusca {
     }
 
     setStatusCarregando(isLoading) {
-        this.panelInstance.querySelector('#art-btn-search').style.display = isLoading ? 'none' : 'flex';
-        this.panelInstance.querySelector('#art-btn-cancel').style.display = isLoading ? 'flex' : 'none';
+        this.panelInstance.getNode().querySelector('#art-btn-search').style.display = isLoading ? 'none' : 'flex';
+        this.panelInstance.getNode().querySelector('#art-btn-cancel').style.display = isLoading ? 'flex' : 'none';
         
         const formAtivo = this._formularios.find(f => f.getModoID() === this._modoAtivo);
         if (formAtivo) formAtivo.bloquearInputs(isLoading);
@@ -123,12 +132,19 @@ class ConteinerFormulariosBusca {
             onClick: () => this._alternarModo(form.getModoID())
         }));
 
-        const tabs = this._uiFacade.createTabs({ items: itensAba });
-        Array.from(tabs.children).forEach(tab => { tab.style.flex = "1"; tab.style.textAlign = "center"; });
+        const tabs = this._uiFacade.createTabs ? this._uiFacade.createTabs({ items: itensAba }) : this._fallbackAbaHtml(itensAba);
         
-        const panelBody = this.panelInstance.querySelector('.my-panel-body');
+        const panelBody = this.panelInstance.getNode().querySelector('.pts-panel-body') || this.panelInstance.getNode();
         panelBody.insertBefore(tabs, panelBody.firstChild);
         return tabs;
+    }
+    
+    _fallbackAbaHtml(itensAba) {
+        const d = document.createElement('div');
+        d.style.display = 'flex'; d.style.marginBottom = '15px'; d.style.borderBottom = '1px solid #333';
+        d.innerHTML = itensAba.map(i => `<div style="flex:1; text-align:center; padding:10px; cursor:pointer; font-weight:bold; color: ${i.active ? 'var(--th-primary)' : '#666'}; border-bottom: ${i.active ? '2px solid var(--th-primary)' : 'none'}">${i.label}</div>`).join('');
+        Array.from(d.children).forEach((el, index) => el.onclick = itensAba[index].onClick);
+        return d;
     }
 
     _alternarModo(modoID) {
@@ -140,11 +156,11 @@ class ConteinerFormulariosBusca {
     }
 
     _bindEvents() {
-        this.panelInstance.querySelector('#art-btn-search').onclick = () => {
+        this.panelInstance.getNode().querySelector('#art-btn-search').onclick = () => {
             const formAtivo = this._formularios.find(f => f.getModoID() === this._modoAtivo);
             this._callbacks.onSearch(this._modoAtivo, formAtivo.getValores());
         };
-        this.panelInstance.querySelector('#art-btn-cancel').onclick = () => this._callbacks.onCancel();
+        this.panelInstance.getNode().querySelector('#art-btn-cancel').onclick = () => this._callbacks.onCancel();
     }
 }
 
@@ -160,42 +176,47 @@ class DetalhesCardResultado {
     }
 
     render() {
-        const T = this._uiFacade.templates;
         const root = document.createElement('div');
         
-        // Exemplo de aba de Atividades Técnicas (Estrutura simplificada para abstração)
-        let atividadesHTML = T.emptyState("Nenhuma atividade registrada.");
+        let atividadesHTML = `<div style="text-align: center; padding: 16px; color: var(--th-text-muted); font-size: 13px;">Nenhuma atividade registrada.</div>`;
         if (this._dadosART.atividadesTecnicas && this._dadosART.atividadesTecnicas.length > 0) {
             atividadesHTML = `<div>${this._dadosART.atividadesTecnicas.length} atividades identificadas.</div>`;
         }
 
-        // Exemplo de aba Outros (Onde os botões de injeção habitam)
-        const idBtnProp = `btn-inj-prop-${Date.now()}`;
-        const outrosHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <strong>Proprietário:</strong> ${this._dadosART.obra.proprietario || "N/A"}
-                ${this._uiFacade.createIconButton({ icon: '📌', id: idBtnProp, tooltip: 'Preencher na RMO', size: '16px' }).outerHTML}
-            </div>
-        `;
-
         const view1 = document.createElement('div'); view1.innerHTML = atividadesHTML;
-        const view2 = document.createElement('div'); view2.innerHTML = outrosHTML; view2.style.display = 'none';
+        const view2 = document.createElement('div'); view2.style.cssText = 'display: none; justify-content: space-between; align-items: center;';
+        
+        const labelText = document.createElement('span');
+        labelText.innerHTML = `<strong>Proprietário:</strong> ${this._dadosART.obra.proprietario || "N/A"}`;
+        view2.appendChild(labelText);
+        
+        // Uso da Instância Nativa de Botão (OOP)
+        const btnAnchor = document.createElement('div');
+        view2.appendChild(btnAnchor);
+        const iconBtn = this._uiFacade.createIconButton(btnAnchor, '📌', () => this._injetarDadosProprietario(), 'Preencher na RMO');
+        iconBtn.mount();
 
-        const tabs = this._uiFacade.createTabs({
+        const tabsConfig = {
             items: [
                 { label: "Atividades", active: true, onClick: () => { view1.style.display='block'; view2.style.display='none'; } },
-                { label: "Outros", active: false, onClick: () => { view1.style.display='none'; view2.style.display='block'; } }
+                { label: "Outros", active: false, onClick: () => { view1.style.display='none'; view2.style.display='flex'; } }
             ]
-        });
+        };
+        
+        const tabs = this._uiFacade.createTabs ? this._uiFacade.createTabs(tabsConfig) : this._fallbackAbaHtml(tabsConfig.items);
 
         root.appendChild(tabs);
         root.append(view1, view2);
 
-        // Bind events dos botões internos gerados acima
-        const btnInjetar = root.querySelector(`#${idBtnProp}`);
-        if (btnInjetar) btnInjetar.onclick = () => this._injetarDadosProprietario();
-
         return root;
+    }
+
+    _fallbackAbaHtml(itensAba) {
+        const d = document.createElement('div');
+        d.style.display = 'flex'; d.style.marginBottom = '15px'; d.style.borderBottom = '1px solid #333';
+        d.innerHTML = itensAba.map(i => `<div style="flex:1; text-align:center; padding:10px; cursor:pointer; font-weight:bold; color: ${i.active ? 'var(--th-primary)' : '#666'}; border-bottom: ${i.active ? '2px solid var(--th-primary)' : 'none'}">${i.label}</div>`).join('');
+        Array.from(d.children).forEach((el, index) => el.onclick = itensAba[index].onClick);
+        return d;
     }
 
     _injetarDadosProprietario() {
@@ -203,13 +224,13 @@ class DetalhesCardResultado {
             proprietario: { proprietario: this._dadosART.obra.proprietario, cpfCnpj: this._dadosART.obra.documentoLimpo }
         };
         const sucesso = this._conexaoRMO.setDadosRmo(payload);
-        if (sucesso) this._uiFacade.toast.success("Proprietário injetado na RMO!");
-        else this._uiFacade.toast.error("Falha ao conectar com o Angular da RMO.");
+        if (sucesso) this._uiFacade.toast("Proprietário injetado na RMO!", "success");
+        else this._uiFacade.toast("Falha ao conectar com o Angular da RMO.", "error");
     }
 
     _inserirNovoEnvolvido(tipo, dados) {
         const sucesso = this._conexaoRMO.adicionarEnvolvido(dados, 'nome');
-        if (sucesso) this._uiFacade.toast.success(`Envolvido (${tipo}) adicionado.`);
+        if (sucesso) this._uiFacade.toast(`Envolvido (${tipo}) adicionado.`, "success");
     }
 }
 
@@ -218,10 +239,6 @@ class DetalhesCardResultado {
  * @description Representa um item da lista. Agrega um DetalhesCardResultado (Composição).
  */
 class CardResultado {
-    /**
-     * @param {Object} dadosART - DTO básico proveniente do parse da Lista.
-     * @param {Object} dependencias - Injeção das libs necessárias para as ações de rede e UI.
-     */
     constructor(dadosART, dependencias) {
         this._dadosART = dadosART;
         this._uiFacade = dependencias.uiFacade;
@@ -229,26 +246,34 @@ class CardResultado {
         this._creaHelper = dependencias.creaHelper;
         
         this._detalhesAbertos = false;
-        this._detalhesInstancia = null; // Type: DetalhesCardResultado
-        
-        this._cardElement = null; // A âncora DOM deste card
+        this._detalhesInstancia = null; 
+        this._cardElement = null; 
     }
 
     render() {
-        const T = this._uiFacade.templates;
-        const rootHTML = `
-            ${T.keyValue("Proprietário:", this._dadosART.proprietario || "N/A")}
-            <div style="margin-top: 8px; border-top: 1px solid rgba(128,128,128,0.25); display: flex; justify-content: space-between; align-items: center; padding-top: 8px;">
-                <div style="font-size: 13px; color: var(--th-text-muted);">📍 ${this._dadosART.endereco}</div>
-                ${this._uiFacade.createIconButton({ icon: 'ℹ', id: `btn-det-${this._dadosART.numeroART}`, tooltip: 'Ver Detalhes', size: '16px' }).outerHTML}
-            </div>
-            <div class="card-detalhes-ancora" style="display: none; margin-top: 10px; border-top: 1px dashed rgba(128,128,128,0.25); padding-top: 10px;"></div>
-        `;
-
-        this._cardElement = this._uiFacade.createCard({ title: this._dadosART.numeroART, html: rootHTML, variant: 'success' });
+        const rootContent = document.createElement('div');
         
-        const btnDetalhes = this._cardElement.querySelector(`#btn-det-${this._dadosART.numeroART}`);
-        btnDetalhes.onclick = () => this._handleToggleDetalhes(btnDetalhes);
+        const kvNode = document.createElement('div');
+        kvNode.innerHTML = `<span class="pts-kv-label" style="font-weight:bold;">Proprietário:</span> <span class="pts-kv-value">${this._dadosART.proprietario || "N/A"}</span>`;
+        rootContent.appendChild(kvNode);
+
+        const rowDiv = document.createElement('div');
+        rowDiv.style.cssText = "margin-top: 8px; border-top: 1px solid rgba(128,128,128,0.25); display: flex; justify-content: space-between; align-items: center; padding-top: 8px;";
+        rowDiv.innerHTML = `<div style="font-size: 13px; color: var(--th-text-muted);">📍 ${this._dadosART.endereco}</div>`;
+        rootContent.appendChild(rowDiv);
+        
+        const btnAnchor = document.createElement('div');
+        rowDiv.appendChild(btnAnchor);
+        const btnDetalhesObj = this._uiFacade.createIconButton(btnAnchor, 'ℹ', () => this._handleToggleDetalhes(btnDetalhesObj), 'Ver Detalhes');
+        btnDetalhesObj.mount();
+
+        const containerDetalhes = document.createElement('div');
+        containerDetalhes.className = 'card-detalhes-ancora';
+        containerDetalhes.style.cssText = "display: none; margin-top: 10px; border-top: 1px dashed rgba(128,128,128,0.25); padding-top: 10px;";
+        rootContent.appendChild(containerDetalhes);
+
+        const cardObj = this._uiFacade.createCard(null, { title: this._dadosART.numeroART, content: rootContent, variant: 'success' });
+        this._cardElement = cardObj.getNode();
 
         return this._cardElement;
     }
@@ -258,27 +283,25 @@ class CardResultado {
         const container = this._cardElement.querySelector('.card-detalhes-ancora');
         container.style.display = this._detalhesAbertos ? 'block' : 'none';
         
-        const btnDetalhes = this._cardElement.querySelector(`#btn-det-${this._dadosART.numeroART}`);
-        if (btnDetalhes) btnDetalhes.innerHTML = this._detalhesAbertos ? '▲' : 'ℹ';
+        // Puxa o DOM element real do IconButton e altera apenas seu HTML interno para a "seta"
+        const btnNode = this._cardElement.querySelector('.pts-btn-icon');
+        if (btnNode) btnNode.innerHTML = this._detalhesAbertos ? '▲' : 'ℹ';
     }
 
-    async _handleToggleDetalhes(botao) {
-        // Padrão Lazy Load: Instancia DetalhesCardResultado apenas uma vez
+    async _handleToggleDetalhes(botaoObjFacade) {
         if (!this._detalhesInstancia) {
-            botao.innerHTML = '⏳';
+            botaoObjFacade.setIcon('⏳');
             try {
-                // Utiliza a dependência de rede injetada para buscar os detalhes
                 const html = await this._commBridge.apiART.fetchText(this._dadosART.urlImpressao);
                 const dadosProfundos = this._creaHelper.parser.parseDetalhe(html);
                 
-                // Aplica a Composição: cria a instância dependente
                 this._detalhesInstancia = new DetalhesCardResultado(this._uiFacade, dadosProfundos, this._creaHelper.rmo);
                 
                 const container = this._cardElement.querySelector('.card-detalhes-ancora');
                 container.appendChild(this._detalhesInstancia.render());
             } catch (err) {
-                botao.innerHTML = '❌';
-                this._uiFacade.toast.error("Falha ao baixar detalhes da ART.");
+                botaoObjFacade.setIcon('❌');
+                this._uiFacade.toast("Falha ao baixar detalhes.", "error");
                 return;
             }
         }
@@ -294,9 +317,9 @@ class PainelBuscaControle {
     constructor(app, uiFacade) {
         this._app = app;
         this._uiFacade = uiFacade;
-        this._painelBusca = null; // Type: ConteinerFormulariosBusca
-        this._conteinerResultados = null; // Type: HTMLElement
-        this._resultados = []; // Type: [CardResultado]
+        this._painelBusca = null; 
+        this._conteinerResultados = null; 
+        this._resultados = []; 
     }
 
     construirPainel(listaModos) {
@@ -308,7 +331,6 @@ class PainelBuscaControle {
         };
 
         this._painelBusca = new ConteinerFormulariosBusca(this._uiFacade, callbacks);
-        
         listaModos.forEach(modo => this._painelBusca.addModo(modo));
         
         this._conteinerResultados = this._painelBusca.render();
@@ -322,8 +344,10 @@ class PainelBuscaControle {
         if (!this._conteinerResultados) return;
         
         this._conteinerResultados.querySelectorAll('.pts-status-box').forEach(el => el.remove());
-        const statusBox = this._uiFacade.createStatusBox(this._conteinerResultados, msg, tipo);
-        statusBox.mount('afterbegin'); // Monta no início da div de resultados
+        const statusBoxObj = this._uiFacade.createStatusBox(this._conteinerResultados, msg, tipo);
+        
+        // Uso Seguro e Nativo do DOM sem depender de métodos sujos como 'afterbegin' pro mount OOP
+        this._conteinerResultados.insertBefore(statusBoxObj.getNode(), this._conteinerResultados.firstChild);
     }
 
     renderizarResultados(listaArts, dependencias) {
@@ -338,8 +362,6 @@ class PainelBuscaControle {
 
     limparResultados() {
         this._resultados = [];
-        if (this._conteinerResultados) {
-            this._conteinerResultados.innerHTML = '';
-        }
+        if (this._conteinerResultados) this._conteinerResultados.innerHTML = '';
     }
 }

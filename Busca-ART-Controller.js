@@ -37,11 +37,21 @@ class BuscaARTController {
     }
 
     inicializar() {
-        this._UI.createFab('🔍', "Alternar Caça ART", () => {
+        const _fab = this._UI.createFab('🔍', () => {
             if (!document.getElementById('caca-art-painel') && !document.getElementById('form-address')) {
                 this._injetarInterfaceNoDOM();
+            } else {
+                // Se o painel já existe, garante que ele ficará visível ao clicar no Fab
+                if (this._painelUI && typeof this._painelUI.exibir === 'function') {
+                    this._painelUI.exibir();
+                } else {
+                    const el = document.getElementById('caca-art-painel');
+                    if(el) { el.style.display = 'flex'; el.style.opacity = '1'; }
+                }
             }
-        });
+        }, "Alternar Caça ART");
+        
+        _fab.mount();
     }
 
     /* --------------------------------------------------------------------------

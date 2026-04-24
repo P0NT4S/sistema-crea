@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         RMO Busca ART (V2 - Arquitetura POO)
 // @namespace    https://github.com/P0NT4S/
-// @version      10.0.0
+// @version      10.0.1
 // @description  Orquestrador de buscas de ART 100% repaginado para arquitetura POO/MVC e Motor Assíncrono isolado.
 // @author       P0nt4s
 // @match        https://mobile.creadf.org.br/sgf_web_21/www/*
