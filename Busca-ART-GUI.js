@@ -137,6 +137,7 @@ class ConteinerFormulariosBusca {
         }));
 
         const tabs = this._uiFacade.createTabs ? this._uiFacade.createTabs({ items: itensAba }) : this._fallbackAbaHtml(itensAba);
+        this._tabsNode = tabs; // Referência para update visual
         
         const panelBody = this.panelInstance.getNode().querySelector('.pts-panel-body') || this.panelInstance.getNode();
         panelBody.insertBefore(tabs, panelBody.firstChild);
@@ -157,6 +158,14 @@ class ConteinerFormulariosBusca {
             if (form.getModoID() === modoID) form.show();
             else form.hide();
         });
+
+        if (this._tabsNode) {
+            Array.from(this._tabsNode.children).forEach((el, index) => {
+                const ativo = this._formularios[index].getModoID() === modoID;
+                el.style.color = ativo ? 'var(--th-primary)' : '#666';
+                el.style.borderBottom = ativo ? '2px solid var(--th-primary)' : 'none';
+            });
+        }
     }
 
     _bindEvents() {
@@ -343,12 +352,23 @@ class PainelBuscaControle {
         this._conteinerResultados = this._painelBusca.render();
     }
 
-    exibir() {
+    toggle() {
         if (this._painelBusca && this._painelBusca.panelInstance) {
-            this._painelBusca.panelInstance.show();
+            const el = this._painelBusca.panelInstance.getNode();
+            if (el.style.display === 'none') {
+                this._painelBusca.panelInstance.show();
+            } else {
+                this._painelBusca.panelInstance.hide();
+            }
         } else {
             const el = document.getElementById('caca-art-painel');
-            if (el) { el.style.display = 'flex'; el.style.opacity = '1'; }
+            if (el) { 
+                if (el.style.display === 'none') {
+                    el.style.display = 'flex'; el.style.opacity = '1'; 
+                } else {
+                    el.style.display = 'none';
+                }
+            }
         }
     }
 

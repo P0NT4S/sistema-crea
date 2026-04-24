@@ -41,12 +41,15 @@ class BuscaARTController {
             if (!document.getElementById('caca-art-painel') && !document.getElementById('form-address')) {
                 this._injetarInterfaceNoDOM();
             } else {
-                // Se o painel já existe, garante que ele ficará visível ao clicar no Fab
-                if (this._painelUI && typeof this._painelUI.exibir === 'function') {
-                    this._painelUI.exibir();
+                // Se o painel já existe, garante o toggle (Abre/Fecha) ao clicar no Fab
+                if (this._painelUI && typeof this._painelUI.toggle === 'function') {
+                    this._painelUI.toggle();
                 } else {
                     const el = document.getElementById('caca-art-painel');
-                    if(el) { el.style.display = 'flex'; el.style.opacity = '1'; }
+                    if (el) { 
+                        if (el.style.display === 'none') { el.style.display = 'flex'; el.style.opacity = '1'; }
+                        else el.style.display = 'none';
+                    }
                 }
             }
         }, "Alternar Caça ART");
@@ -131,31 +134,35 @@ class BuscaARTController {
         // Fazemos uso nativo e limpo dos componentes UI baseados em Classes
         const formEnd = new FormularioBusca(this._UI, 'address', '📍 Por Endereço', (ctx, inputs, ui) => {
             inputs.logradouro = ui.createInput(ctx, "Logradouro", "", "text", autoData.logradouro);
+            inputs.logradouro.mount();
+
             inputs.bairro = ui.createInput(ctx, "Bairro", "", "text", autoData.bairro);
+            inputs.bairro.mount();
             
-            // Componentes que vão ocupar a Row devem nascer sem parent inicialmente para não bagunçar o DOM tree
             inputs.numeros = ui.createInput(null, "Filtros Opcionais (CSV)", 'Ex: 10, conj, "lote a"', "text", autoData.numeros);
             inputs.pagina = ui.createInput(null, "Pág. Inicial", "", "number", "1");
             
-            ui.createFlexRow(ctx, [inputs.numeros, inputs.pagina]);
+            ui.createFlexRow(ctx, [inputs.numeros, inputs.pagina]).mount();
         });
 
         const formCont = new FormularioBusca(this._UI, 'contract', '📄 Por Contrato', (ctx, inputs, ui) => {
             inputs.cnpj = ui.createInput(ctx, "CNPJ do Contratante", "Ex: 00.000.000/0001-00", "text", "");
+            inputs.cnpj.mount();
             
             inputs.contrato = ui.createInput(null, "Contrato/Ano", "Ex: 203/2025", "text", "");
             inputs.pagina = ui.createInput(null, "Pág. Inicial", "", "number", "1");
             
-            ui.createFlexRow(ctx, [inputs.contrato, inputs.pagina]);
+            ui.createFlexRow(ctx, [inputs.contrato, inputs.pagina]).mount();
         });
 
         const formDoc = new FormularioBusca(this._UI, 'document', '👤 Por CPF/CNPJ', (ctx, inputs, ui) => {
             inputs.docCpfCnpj = ui.createInput(ctx, "CPF ou CNPJ", "Ex: 000.000.000-00", "text", "");
+            inputs.docCpfCnpj.mount();
             
             inputs.enderecoOpcional = ui.createInput(null, "Filtro de Endereço Opcional", 'Ex: lote, 35', "text", "");
             inputs.pagina = ui.createInput(null, "Pág. Inicial", "", "number", "1");
             
-            ui.createFlexRow(ctx, [inputs.enderecoOpcional, inputs.pagina]);
+            ui.createFlexRow(ctx, [inputs.enderecoOpcional, inputs.pagina]).mount();
         });
 
         this._painelUI.construirPainel([formEnd, formCont, formDoc]);
