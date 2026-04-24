@@ -117,7 +117,7 @@ class ConteinerFormulariosBusca {
         this._bindEvents();
         this._alternarModo(this._modoAtivo);
         
-        this._esteConteiner = this.panelInstance.querySelector('#art-results-container');
+        this._esteConteiner = this.panelInstance.getNode().querySelector('#art-results-container');
         return this._esteConteiner;
     }
 
