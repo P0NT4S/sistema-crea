@@ -38,7 +38,7 @@ class VarredorDeArtsService {
 
                 // 1. Delegar a montagem dos parâmetros HTTP para a Estratégia
                 const paramsStr = estrategia.construirQueryParams(pag).toString();
-                const url = `${window.Comm.urlBaseArt}?${paramsStr}`; // URL base resgatada da config do Tampermonkey
+                const url = `${this._commBridge.urlBaseArt}?${paramsStr}`; // URL base via CommBridge injetado
                 
                 // 2. Fetch Primário
                 const response = await this._commBridge.apiART.fetchAsync(url);
