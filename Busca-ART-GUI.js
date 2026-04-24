@@ -101,6 +101,10 @@ class ConteinerFormulariosBusca {
             content: panelBodyWrapper
         });
 
+        // IMPORTANTE: Classes de alto nível precisam do gatilho para nascerem no DOM nativamente
+        this.panelInstance.mount();
+        this.panelInstance.show();
+
         // Injeta o divider nativo do UIFactory via Object e faz Mount visual
         const divider = this._uiFacade.createDivider(null, '', 'none');
         const anchor = panelBodyWrapper.querySelector('#divider-anchor');
@@ -323,7 +327,10 @@ class PainelBuscaControle {
     }
 
     construirPainel(listaModos) {
-        if (document.getElementById('caca-art-painel')) return;
+        if (document.getElementById('caca-art-painel')) {
+            this.exibir();
+            return;
+        }
 
         const callbacks = {
             onSearch: (modo, dados) => this._app.handleIniciarBusca({ modo, ...dados }),
@@ -334,6 +341,15 @@ class PainelBuscaControle {
         listaModos.forEach(modo => this._painelBusca.addModo(modo));
         
         this._conteinerResultados = this._painelBusca.render();
+    }
+
+    exibir() {
+        if (this._painelBusca && this._painelBusca.panelInstance) {
+            this._painelBusca.panelInstance.show();
+        } else {
+            const el = document.getElementById('caca-art-painel');
+            if (el) { el.style.display = 'flex'; el.style.opacity = '1'; }
+        }
     }
 
     bloquearInputs(isRodando) {
