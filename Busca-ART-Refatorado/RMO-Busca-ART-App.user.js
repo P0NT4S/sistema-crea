@@ -17,6 +17,7 @@
 // @require      https://raw.githubusercontent.com/P0NT4S/sistema-crea/main/Libs/CommBridge.js
 // @require      https://raw.githubusercontent.com/P0NT4S/sistema-crea/main/Busca-ART-Refatorado/Busca-ART-Domain.js
 // @require      https://raw.githubusercontent.com/P0NT4S/sistema-crea/main/Busca-ART-Refatorado/Busca-ART-Service.js
+// @require      https://raw.githubusercontent.com/P0NT4S/sistema-crea/main/Busca-ART-Refatorado/Busca-ART-Factory.js
 // @require      https://raw.githubusercontent.com/P0NT4S/sistema-crea/main/Busca-ART-Refatorado/Busca-ART-GUI.js
 // @require      https://raw.githubusercontent.com/P0NT4S/sistema-crea/main/Busca-ART-Refatorado/Busca-ART-Controller.js
 // @resource     P0nt4sTheme https://raw.githubusercontent.com/P0NT4S/sistema-crea/main/Libs/P0nt4sTheme.css
@@ -73,12 +74,21 @@
 
         if (ThemeManager) ThemeManager.init(); // Vem da Lib UIFactory
 
+        const dependenciasGerais = {
+            UIFactory: appUIFactory,
+            creaHelper: appUtils.crea,
+            CommBridge: appCommBridge
+        };
+
+        const appFactory = new BuscaARTUIFactory(dependenciasGerais);
+
         // Empacotamos as instâncias limpas (Singleton behavior local) para o orquestrador.
         const appDependencies = {
             UIFactory: appUIFactory,
             Utils: appUtils,
             CommBridge: appCommBridge,
-            creaHelper: appUtils.crea
+            creaHelper: appUtils.crea,
+            factory: appFactory
         };
 
         try {

@@ -178,73 +178,90 @@ class ConteinerFormulariosBusca {
 }
 
 /**
- * @class DetalhesCardResultado
- * @description O miolo do Card. Instanciado via Lazy Load. Focado nas abas profundas e na injeção de dados (RMO).
+ * @interface AbaDetalheBase
+ * @description Contrato base para as abas modulares que serão injetadas dentro de um CardResultado.
  */
-class DetalhesCardResultado {
-    constructor(uiFacade, dadosART, conexaoRMO) {
+class AbaDetalheBase {
+    getTituloAba() { throw new Error("Método não implementado"); }
+    setDados(dadosProfundos) { throw new Error("Método não implementado"); }
+    getNode() { throw new Error("Método não implementado"); }
+}
+
+/**
+ * @class AbaDetalheAtividades
+ * @description Aba concreta responsável por exibir a lista de atividades.
+ */
+class AbaDetalheAtividades extends AbaDetalheBase {
+    constructor(uiFacade) {
+        super();
         this._uiFacade = uiFacade;
-        this._dadosART = dadosART; // Dados ricos, provenientes do parserDetalhe
-        this._conexaoRMO = conexaoRMO; // Instância do RmoInterceptor
+        this._dados = null;
+        this._root = document.createElement('div');
+    }
+
+    getTituloAba() { return "Atividades"; }
+    
+    setDados(dadosProfundos) {
+        this._dados = dadosProfundos;
+        this.render();
     }
 
     render() {
-        const root = document.createElement('div');
-        
+        this._root.innerHTML = '';
         let atividadesHTML = `<div style="text-align: center; padding: 16px; color: var(--th-text-muted); font-size: 13px;">Nenhuma atividade registrada.</div>`;
-        if (this._dadosART.atividadesTecnicas && this._dadosART.atividadesTecnicas.length > 0) {
-            atividadesHTML = `<div>${this._dadosART.atividadesTecnicas.length} atividades identificadas.</div>`;
+        if (this._dados.atividadesTecnicas && this._dados.atividadesTecnicas.length > 0) {
+            atividadesHTML = `<div>${this._dados.atividadesTecnicas.length} atividades identificadas.</div>`;
         }
-
-        const view1 = document.createElement('div'); view1.innerHTML = atividadesHTML;
-        const view2 = document.createElement('div'); view2.style.cssText = 'display: none; justify-content: space-between; align-items: center;';
-        
-        const labelText = document.createElement('span');
-        labelText.innerHTML = `<strong>Proprietário:</strong> ${this._dadosART.obra.proprietario || "N/A"}`;
-        view2.appendChild(labelText);
-        
-        // Uso da Instância Nativa de Botão (OOP)
-        const btnAnchor = document.createElement('div');
-        view2.appendChild(btnAnchor);
-        const iconBtn = this._uiFacade.createIconButton(btnAnchor, '📌', () => this._injetarDadosProprietario(), 'Preencher na RMO');
-        iconBtn.mount();
-
-        const tabsConfig = {
-            items: [
-                { label: "Atividades", active: true, onClick: () => { view1.style.display='block'; view2.style.display='none'; } },
-                { label: "Outros", active: false, onClick: () => { view1.style.display='none'; view2.style.display='flex'; } }
-            ]
-        };
-        
-        const tabs = this._uiFacade.createTabs ? this._uiFacade.createTabs(tabsConfig) : this._fallbackAbaHtml(tabsConfig.items);
-
-        root.appendChild(tabs);
-        root.append(view1, view2);
-
-        return root;
+        this._root.innerHTML = atividadesHTML;
     }
 
-    _fallbackAbaHtml(itensAba) {
-        const d = document.createElement('div');
-        d.style.display = 'flex'; d.style.marginBottom = '15px'; d.style.borderBottom = '1px solid #333';
-        d.innerHTML = itensAba.map(i => `<div style="flex:1; text-align:center; padding:10px; cursor:pointer; font-weight:bold; color: ${i.active ? 'var(--th-primary)' : '#666'}; border-bottom: ${i.active ? '2px solid var(--th-primary)' : 'none'}">${i.label}</div>`).join('');
-        Array.from(d.children).forEach((el, index) => el.onclick = itensAba[index].onClick);
-        return d;
+    getNode() { return this._root; }
+}
+
+/**
+ * @class AbaDetalheProprietario
+ * @description Aba concreta para ações do Proprietário (Injeção na RMO).
+ */
+class AbaDetalheProprietario extends AbaDetalheBase {
+    constructor(uiFacade, conexaoRMO) {
+        super();
+        this._uiFacade = uiFacade;
+        this._conexaoRMO = conexaoRMO;
+        this._dados = null;
+        this._root = document.createElement('div');
+        this._root.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 10px 0;';
+    }
+
+    getTituloAba() { return "Proprietário / RMO"; }
+
+    setDados(dadosProfundos) {
+        this._dados = dadosProfundos;
+        this.render();
+    }
+
+    render() {
+        this._root.innerHTML = '';
+        const labelText = document.createElement('span');
+        labelText.innerHTML = `<strong>Proprietário:</strong> ${this._dados.obra.proprietario || "N/A"}`;
+        this._root.appendChild(labelText);
+        
+        const btnAnchor = document.createElement('div');
+        this._root.appendChild(btnAnchor);
+        const iconBtn = this._uiFacade.createIconButton(btnAnchor, '📌', () => this._injetarDadosProprietario(), 'Preencher na RMO');
+        iconBtn.mount();
     }
 
     _injetarDadosProprietario() {
+        if (!this._dados) return;
         const payload = {
-            proprietario: { proprietario: this._dadosART.obra.proprietario, cpfCnpj: this._dadosART.obra.documentoLimpo }
+            proprietario: { proprietario: this._dados.obra.proprietario, cpfCnpj: this._dados.obra.documentoLimpo }
         };
         const sucesso = this._conexaoRMO.setDadosRmo(payload);
         if (sucesso) this._uiFacade.toast("Proprietário injetado na RMO!", "success");
         else this._uiFacade.toast("Falha ao conectar com o Angular da RMO.", "error");
     }
 
-    _inserirNovoEnvolvido(tipo, dados) {
-        const sucesso = this._conexaoRMO.adicionarEnvolvido(dados, 'nome');
-        if (sucesso) this._uiFacade.toast(`Envolvido (${tipo}) adicionado.`, "success");
-    }
+    getNode() { return this._root; }
 }
 
 /**
@@ -259,8 +276,14 @@ class CardResultado {
         this._creaHelper = dependencias.creaHelper;
         
         this._detalhesAbertos = false;
-        this._detalhesInstancia = null; 
         this._cardElement = null; 
+        
+        this._abasDetalhes = []; // Array de instâncias AbaDetalheBase (injetadas via composition)
+        this._abasJaCarregadas = false;
+    }
+
+    addAbaDetalhe(abaInstancia) {
+        this._abasDetalhes.push(abaInstancia);
     }
 
     render() {
@@ -302,23 +325,62 @@ class CardResultado {
     }
 
     async _handleToggleDetalhes(botaoObjFacade) {
-        if (!this._detalhesInstancia) {
+        if (!this._abasJaCarregadas) {
             botaoObjFacade.setIcon('⏳');
             try {
                 const html = await this._commBridge.apiART.fetchText(this._dadosART.url);
                 const dadosProfundos = this._creaHelper.parser.parseDetalhe(html);
                 
-                this._detalhesInstancia = new DetalhesCardResultado(this._uiFacade, dadosProfundos, this._creaHelper.rmo);
+                // Distribui os dados para as abas instanciadas e as renderiza
+                this._abasDetalhes.forEach(aba => aba.setDados(dadosProfundos));
                 
-                const container = this._cardElement.querySelector('.card-detalhes-ancora');
-                container.appendChild(this._detalhesInstancia.render());
+                const containerDetalhesDOM = this._cardElement.querySelector('.card-detalhes-ancora');
+                
+                const itensAba = this._abasDetalhes.map((aba, index) => {
+                    const node = aba.getNode();
+                    node.style.display = index === 0 ? 'block' : 'none'; // A primeira nasce aberta
+                    
+                    return {
+                        label: aba.getTituloAba(),
+                        active: index === 0,
+                        onClick: () => {
+                            this._abasDetalhes.forEach(a => a.getNode().style.display = 'none');
+                            node.style.display = 'block';
+                        }
+                    };
+                });
+
+                const tabsNode = this._uiFacade.createTabs ? this._uiFacade.createTabs({ items: itensAba }) : this._fallbackAbaHtml(itensAba);
+                containerDetalhesDOM.appendChild(tabsNode);
+                
+                // Injeta as views logo abaixo do controlador visual das abas
+                this._abasDetalhes.forEach(aba => containerDetalhesDOM.appendChild(aba.getNode()));
+                
+                this._abasJaCarregadas = true;
             } catch (err) {
+                console.error(err);
                 botaoObjFacade.setIcon('❌');
                 this._uiFacade.toast("Falha ao baixar detalhes.", "error");
                 return;
             }
         }
         this.abrirFecharDetalhes();
+    }
+
+    _fallbackAbaHtml(itensAba) {
+        const d = document.createElement('div');
+        d.style.display = 'flex'; d.style.marginBottom = '15px'; d.style.borderBottom = '1px solid #333';
+        d.innerHTML = itensAba.map(i => `<div style="flex:1; text-align:center; padding:10px; cursor:pointer; font-weight:bold; color: ${i.active ? 'var(--th-primary)' : '#666'}; border-bottom: ${i.active ? '2px solid var(--th-primary)' : 'none'}">${i.label}</div>`).join('');
+        Array.from(d.children).forEach((el, index) => {
+            el.onclick = () => {
+                itensAba[index].onClick();
+                Array.from(d.children).forEach((abaEl, i) => {
+                    abaEl.style.color = i === index ? 'var(--th-primary)' : '#666';
+                    abaEl.style.borderBottom = i === index ? '2px solid var(--th-primary)' : 'none';
+                });
+            };
+        });
+        return d;
     }
 }
 
@@ -386,14 +448,11 @@ class PainelBuscaControle {
         this._conteinerResultados.insertBefore(statusBoxObj.getNode(), this._conteinerResultados.firstChild);
     }
 
-    renderizarResultados(listaArts, dependencias) {
-        listaArts.forEach(dados => this.addResultado(dados, dependencias));
-    }
-
-    addResultado(dados, dependencias) {
-        const card = new CardResultado(dados, dependencias);
-        this._resultados.push(card);
-        this._conteinerResultados.appendChild(card.render());
+    renderizarResultadosProntos(cardsProntos) {
+        cardsProntos.forEach(card => {
+            this._resultados.push(card);
+            this._conteinerResultados.appendChild(card.render());
+        });
     }
 
     limparResultados() {
