@@ -506,12 +506,27 @@ class KeyValue extends DataDisplayBase {
     getValues() { return Object.values(this.data); }
 
     render() {
-        this.el.innerHTML = Object.entries(this.data).map(([label, val]) => `
-            <div style="margin-bottom: 4px;">
-                <span class="pts-kv-label">${label}:</span>
-                <span class="pts-kv-value">${val}</span>
-            </div>
-        `).join('');
+        this.el.innerHTML = '';
+        Object.entries(this.data).forEach(([label, val]) => {
+            const row = document.createElement('div');
+            row.style.cssText = 'display: flex; justify-content: flex-start; align-items: flex-end; margin-bottom: 4px; border-bottom: 1px dotted rgba(128,128,128,0.25);';
+            
+            const labelEl = document.createElement('div');
+            labelEl.className = 'pts-kv-label';
+            labelEl.style.cssText = 'font-weight: bold; width: 35%; flex-shrink: 0; font-size: 13px; padding-bottom: 2px;';
+            labelEl.innerText = `${label}:`;
+            
+            const valueEl = document.createElement('div');
+            valueEl.className = 'pts-kv-value';
+            valueEl.style.cssText = 'flex-grow: 1; padding-bottom: 2px; color: var(--th-text-light); text-align: right; word-break: break-all;';
+            
+            if (typeof val === 'string') valueEl.innerHTML = val;
+            else if (val instanceof HTMLElement) valueEl.appendChild(val);
+            else if (val && typeof val.getNode === 'function') valueEl.appendChild(val.getNode());
+            
+            row.append(labelEl, valueEl);
+            this.el.appendChild(row);
+        });
     }
 }
 
@@ -564,6 +579,32 @@ class Input extends FormBase {
             inputNode.value = this.value;
             inputNode.disabled = this.isDisabled;
         }
+    }
+}
+
+class CopyableText extends UIBase {
+    constructor(core, parent, display, cleanValue, tooltip = "Copiar dado", variant = "info") {
+        super(core, parent, 'pts-copy', 'span');
+        this.el.dataset.clean = cleanValue;
+        this.el.title = tooltip;
+        this.el.style.cssText = `color: var(--th-${variant}); cursor: pointer; text-decoration: underline dashed; font-weight: bold;`;
+        this.el.innerText = display;
+    }
+}
+
+class ScrollableArea extends UIBase {
+    constructor(core, parent, contentHtml, maxHeight = "250px") {
+        super(core, parent, '', 'div');
+        this.el.style.cssText = `max-height: ${maxHeight}; overflow-y: auto; padding-right: 5px; color: var(--th-text-light); font-size: 13px; line-height: 1.4;`;
+        this.el.innerHTML = contentHtml;
+    }
+}
+
+class EmptyState extends UIBase {
+    constructor(core, parent, message) {
+        super(core, parent, '', 'div');
+        this.el.style.cssText = 'text-align: center; padding: 16px; color: var(--th-text-muted); font-size: 13px; border: 1px dashed rgba(128,128,128,0.2); border-radius: 4px;';
+        this.el.innerHTML = message;
     }
 }
 
@@ -647,4 +688,9 @@ class UIFacade {
     createInput(parent, label, placeholder, type, initVal) { return new Input(this.core, parent, label, placeholder, type, initVal); }
     createDivider(parent, title, style) { return new Divider(this.core, parent, title, style); }
     createFlexRow(parent, columns, gap) { return new FlexRow(this.core, parent, columns, gap); }
+    
+    // Novas injeções para restauração de UI
+    createCopyableText(parent, display, cleanValue, tooltip, variant) { return new CopyableText(this.core, parent, display, cleanValue, tooltip, variant); }
+    createScrollableArea(parent, contentHtml, maxHeight) { return new ScrollableArea(this.core, parent, contentHtml, maxHeight); }
+    createEmptyState(parent, message) { return new EmptyState(this.core, parent, message); }
 }

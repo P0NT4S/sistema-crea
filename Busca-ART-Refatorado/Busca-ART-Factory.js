@@ -15,6 +15,7 @@ class BuscaARTUIFactory {
         this._uiFacade = dependencias.UIFactory;
         this._creaHelper = dependencias.creaHelper;
         this._commBridge = dependencias.CommBridge;
+        this._utilsCore = dependencias.Utils;
     }
 
     /**
@@ -81,7 +82,9 @@ class BuscaARTUIFactory {
         
         // Factory agindo de verdade: Constrói a Composição do Componente injetando Abas!
         card.addAbaDetalhe(new AbaDetalheAtividades(this._uiFacade));
-        card.addAbaDetalhe(new AbaDetalheProprietario(this._uiFacade, this._creaHelper.rmo));
+        card.addAbaDetalhe(new AbaDetalheObservacoes(this._uiFacade));
+        card.addAbaDetalhe(new AbaDetalheResponsaveis(this._uiFacade, this._creaHelper.rmo, this._utilsCore));
+        card.addAbaDetalhe(new AbaDetalheOutros(this._uiFacade, this._creaHelper.rmo, dadosART, this._utilsCore));
         
         return card;
     }

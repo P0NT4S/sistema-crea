@@ -77,7 +77,8 @@
         const dependenciasGerais = {
             UIFactory: appUIFactory,
             creaHelper: appUtils.crea,
-            CommBridge: appCommBridge
+            CommBridge: appCommBridge,
+            Utils: appUtils
         };
 
         const appFactory = new BuscaARTUIFactory(dependenciasGerais);
