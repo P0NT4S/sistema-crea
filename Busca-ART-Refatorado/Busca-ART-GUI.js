@@ -91,7 +91,7 @@ class ConteinerFormulariosBusca {
             <div id="divider-anchor"></div>
             <div class="my-row" style="margin-top: 10px; display: flex; gap: 15px;">
                 <button id="art-btn-search" class="pts-btn pts-btn--primary" style="flex: 1;">🔍 Pesquisar</button>
-                <button id="art-btn-cancel" class="pts-btn pts-btn--error" style="display:none; flex: 1;">⛔ Parar Busca</button>
+                <button id="art-btn-cancel" class="pts-btn pts-btn--error" style="display:none; flex: 1; background-color: var(--th-error); border-color: var(--th-error); color: white;">⛔ Parar Busca</button>
             </div>
             <div id="art-results-container" style="margin-top: 20px;"></div>
         `;
@@ -106,9 +106,7 @@ class ConteinerFormulariosBusca {
         this.panelInstance.show();
 
         // Injeta o divider nativo do UIFactory via Object e faz Mount visual
-        const divider = this._uiFacade.createDivider(null, '', 'none');
-        const anchor = panelBodyWrapper.querySelector('#divider-anchor');
-        anchor.appendChild(divider.getNode());
+        // O Divider desnecessário foi removido a pedido do usuário
 
         const formsContainer = panelBodyWrapper.querySelector('#forms-container');
         this._formularios.forEach(form => formsContainer.appendChild(form.getNode()));
@@ -216,7 +214,7 @@ class AbaDetalheAtividades extends AbaDetalheBase {
         this._dados.atividadesTecnicas.forEach((grupo, idx) => {
             if (grupo && grupo.itens && Array.isArray(grupo.itens)) {
                 const titleNode = document.createElement('div');
-                titleNode.style.cssText = `font-weight: bold; margin-bottom: 4px; ${idx > 0 ? 'margin-top: 12px;' : ''}`;
+                titleNode.style.cssText = `font-weight: bold; color: var(--th-primary-light); margin-bottom: 4px; ${idx > 0 ? 'margin-top: 12px;' : ''}`;
                 titleNode.innerText = grupo.topico;
                 containerNode.appendChild(titleNode);
                 
@@ -253,7 +251,7 @@ class AbaDetalheObservacoes extends AbaDetalheBase {
     render() {
         this._root.innerHTML = '';
         if (this._dados.observacoes) {
-            const content = `<div style="font-weight: bold; margin-bottom: 4px; font-size: 13px;">Observações</div><div style="word-break: break-word; white-space: pre-wrap;">${this._dados.observacoes}</div>`;
+            const content = `<div style="font-weight: bold; color: var(--th-primary-light); margin-bottom: 4px; font-size: 13px;">Observações</div><div style="word-break: break-word; white-space: pre-wrap;">${this._dados.observacoes}</div>`;
             this._root.appendChild(this._uiFacade.createScrollableArea(null, content).getNode());
         } else {
             this._root.appendChild(this._uiFacade.createEmptyState(null, "Nenhuma observação registrada.").getNode());
@@ -282,10 +280,8 @@ class AbaDetalheResponsaveis extends AbaDetalheBase {
     render() {
         this._root.innerHTML = '';
 
-        // 1. Profissional Responsável
         const profHeader = document.createElement('div');
-        profHeader.style.cssText = 'display: flex; justify-content: flex-start; align-items: center; margin-bottom: 4px;';
-        profHeader.innerHTML = `<div style="font-weight: bold; font-size: 13px;">Profissional Responsável</div>`;
+        profHeader.innerHTML = `<div style="font-weight: bold; color: var(--th-primary-light); font-size: 13px;">Profissional Responsável</div>`;
         const btnEnvProfAnchor = document.createElement('div');
         profHeader.appendChild(btnEnvProfAnchor);
         const btnEnvProf = this._uiFacade.createIconButton(btnEnvProfAnchor, '👤', () => this._inserirNovoEnvolvido("Profissional", { 
@@ -301,12 +297,8 @@ class AbaDetalheResponsaveis extends AbaDetalheBase {
         const cpProf = this._uiFacade.createCopyableText(null, this._dados.responsavel.registro || "N/A", regProfLimpo);
         this._root.appendChild(this._uiFacade.createKeyValue(null, "Registro", cpProf).getNode());
 
-        this._root.appendChild(this._uiFacade.createDivider(null, null, "solid").getNode());
-
-        // 2. Empresa Contratada
         const empHeader = document.createElement('div');
-        empHeader.style.cssText = 'display: flex; justify-content: flex-start; align-items: center; margin-bottom: 4px;';
-        empHeader.innerHTML = `<div style="font-weight: bold; font-size: 13px;">Empresa Contratada</div>`;
+        empHeader.innerHTML = `<div style="font-weight: bold; color: var(--th-primary-light); font-size: 13px; margin-top: 10px;">Empresa Contratada</div>`;
         
         if (this._dados.responsavel.empresaContratada && this._dados.responsavel.empresaContratada.nome) {
             const btnEnvEmpAnchor = document.createElement('div');
@@ -326,7 +318,7 @@ class AbaDetalheResponsaveis extends AbaDetalheBase {
             this._root.appendChild(this._uiFacade.createKeyValue(null, "Registro", cpEmp).getNode());
         } else {
             const noEmp = document.createElement('div');
-            noEmp.style.cssText = 'color:var(--th-text-muted); font-size:13px;';
+            noEmp.style.cssText = 'color:var(--th-text-muted); font-size:13px; margin-top: 5px;';
             noEmp.innerText = "Sem empresa vinculada.";
             this._root.appendChild(noEmp);
         }
@@ -363,8 +355,7 @@ class AbaDetalheOutros extends AbaDetalheBase {
         this._root.innerHTML = '';
         
         const propHeader = document.createElement('div');
-        propHeader.style.cssText = 'display: flex; justify-content: flex-start; align-items: center; margin-bottom: 4px;';
-        propHeader.innerHTML = `<div style="font-weight: bold; font-size: 13px;">Proprietário da Obra</div>`;
+        propHeader.innerHTML = `<div style="font-weight: bold; color: var(--th-primary-light); font-size: 13px;">Proprietário da Obra</div>`;
         const btnFillAnchor = document.createElement('div');
         propHeader.appendChild(btnFillAnchor);
         const btnFillProp = this._uiFacade.createIconButton(btnFillAnchor, '📌', () => this._injetarDadosProprietario(), 'Preencher dados na RMO', true);
@@ -377,8 +368,6 @@ class AbaDetalheOutros extends AbaDetalheBase {
         const docLimpo = this._dados.obra.documentoLimpo;
         const cpDoc = docLimpo ? this._uiFacade.createCopyableText(null, this._dados.obra.documento, docLimpo) : "N/A";
         this._root.appendChild(this._uiFacade.createKeyValue(null, "Doc", cpDoc).getNode());
-
-        this._root.appendChild(this._uiFacade.createDivider(null, null, "solid").getNode());
         
         this._root.appendChild(this._uiFacade.createKeyValue(null, "Finalidade", this._dados.obra.finalidade || "N/A").getNode());
 
@@ -387,10 +376,8 @@ class AbaDetalheOutros extends AbaDetalheBase {
         const cpCep = cepLimpo ? this._uiFacade.createCopyableText(null, cepDisplay, cepLimpo) : "N/A";
         this._root.appendChild(this._uiFacade.createKeyValue(null, "CEP", cpCep).getNode());
 
-        this._root.appendChild(this._uiFacade.createDivider(null, null, "solid").getNode());
-
         const artsHeader = document.createElement('div');
-        artsHeader.style.cssText = 'font-weight: bold; margin-bottom: 4px; font-size: 13px;';
+        artsHeader.style.cssText = 'font-weight: bold; color: var(--th-primary-light); margin-top: 10px; font-size: 13px;';
         artsHeader.innerText = "ARTs Associadas";
         this._root.appendChild(artsHeader);
 
@@ -560,8 +547,11 @@ class CardResultado {
         if (!this._abasJaCarregadas) {
             botaoObjFacade.setIcon('⏳');
             try {
-                const html = await this._commBridge.apiART.fetchText(this._dadosART.url);
-                const dadosProfundos = this._creaHelper.parser.parseDetalhe(html);
+                let dadosProfundos = this._dadosART.cacheDetalhes;
+                if (!dadosProfundos) {
+                    const html = await this._commBridge.apiART.fetchText(this._dadosART.url);
+                    dadosProfundos = this._creaHelper.parser.parseDetalhe(html);
+                }
                 
                 if (!this._dadosART.docFormatado) {
                     const docStr = dadosProfundos.contrato.documento || dadosProfundos.obra.documento;

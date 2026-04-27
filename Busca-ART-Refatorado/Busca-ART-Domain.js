@@ -77,6 +77,7 @@ class FiltroPorEndereco extends FiltroGeralBase {
      */
     constructor(input, dependencias) {
         super();
+        this._CommBridge = dependencias.CommBridge;
         this._Utils = dependencias.Utils;
 
         if (!input.logradouro && !input.bairro) {
@@ -106,14 +107,31 @@ class FiltroPorEndereco extends FiltroGeralBase {
 
             const art = extraido.arts[i];
             if (this._Utils.text.checkAll(art.endereco, this.regexList)) {
-                matches.push({
-                    id: Date.now() + i,
-                    url: rmoIdAtual ? `${art.urlImpressao}&rmo_id=${rmoIdAtual}` : art.urlImpressao,
-                    artNum: art.numeroART,
-                    owner: art.proprietario,
-                    address: this._Utils.text.applyHighlight(art.endereco, this.regexList, 'pts-highlight pts-highlight--success'),
-                    dataRegistro: art.dataRegistro
-                });
+                try {
+                    const detailHtml = await this._CommBridge.apiART.fetchText(art.urlImpressao);
+                    const detalhes = this._Utils.crea.parser.parseDetalhe(detailHtml);
+                    matches.push({
+                        id: Date.now() + i,
+                        url: rmoIdAtual ? `${art.urlImpressao}&rmo_id=${rmoIdAtual}` : art.urlImpressao,
+                        artNum: art.numeroART,
+                        owner: art.proprietario,
+                        address: this._Utils.text.applyHighlight(art.endereco, this.regexList, 'pts-highlight pts-highlight--success'),
+                        dataRegistro: art.dataRegistro,
+                        docFormatado: detalhes.contrato.documento || detalhes.obra.documento,
+                        docLimpo: detalhes.contrato.documentoLimpo || detalhes.obra.documentoLimpo,
+                        cacheDetalhes: detalhes
+                    });
+                } catch (e) {
+                    // Fallback
+                    matches.push({
+                        id: Date.now() + i,
+                        url: rmoIdAtual ? `${art.urlImpressao}&rmo_id=${rmoIdAtual}` : art.urlImpressao,
+                        artNum: art.numeroART,
+                        owner: art.proprietario,
+                        address: this._Utils.text.applyHighlight(art.endereco, this.regexList, 'pts-highlight pts-highlight--success'),
+                        dataRegistro: art.dataRegistro
+                    });
+                }
             }
         }
 
@@ -201,6 +219,7 @@ class FiltroPorContrato extends FiltroGeralBase {
 class FiltroPorDocumento extends FiltroGeralBase {
     constructor(input, dependencias) {
         super();
+        this._CommBridge = dependencias.CommBridge;
         this._Utils = dependencias.Utils;
 
         const docRaw = input.docCpfCnpj && input.docCpfCnpj.trim();
@@ -233,14 +252,30 @@ class FiltroPorDocumento extends FiltroGeralBase {
 
             const art = extraido.arts[i];
             if (this._Utils.text.checkAll(art.endereco, this.regexEnderecos)) {
-                matches.push({
-                    id: Date.now() + i,
-                    url: rmoIdAtual ? `${art.urlImpressao}&rmo_id=${rmoIdAtual}` : art.urlImpressao,
-                    artNum: art.numeroART,
-                    owner: art.proprietario,
-                    address: this._Utils.text.applyHighlight(art.endereco, this.regexEnderecos, 'pts-highlight pts-highlight--success'),
-                    dataRegistro: art.dataRegistro
-                });
+                try {
+                    const detailHtml = await this._CommBridge.apiART.fetchText(art.urlImpressao);
+                    const detalhes = this._Utils.crea.parser.parseDetalhe(detailHtml);
+                    matches.push({
+                        id: Date.now() + i,
+                        url: rmoIdAtual ? `${art.urlImpressao}&rmo_id=${rmoIdAtual}` : art.urlImpressao,
+                        artNum: art.numeroART,
+                        owner: art.proprietario,
+                        address: this._Utils.text.applyHighlight(art.endereco, this.regexEnderecos, 'pts-highlight pts-highlight--success'),
+                        dataRegistro: art.dataRegistro,
+                        docFormatado: detalhes.contrato.documento || detalhes.obra.documento,
+                        docLimpo: detalhes.contrato.documentoLimpo || detalhes.obra.documentoLimpo,
+                        cacheDetalhes: detalhes
+                    });
+                } catch (e) {
+                    matches.push({
+                        id: Date.now() + i,
+                        url: rmoIdAtual ? `${art.urlImpressao}&rmo_id=${rmoIdAtual}` : art.urlImpressao,
+                        artNum: art.numeroART,
+                        owner: art.proprietario,
+                        address: this._Utils.text.applyHighlight(art.endereco, this.regexEnderecos, 'pts-highlight pts-highlight--success'),
+                        dataRegistro: art.dataRegistro
+                    });
+                }
             }
         }
 

@@ -394,6 +394,11 @@ class Panel extends ContainerBase {
         this.el.appendChild(this.bodyNode);
 
         if (config.content) this.setContent(config.content);
+        if (config.width) {
+            this.el.style.width = config.width;
+            this.el.style.minWidth = config.width;
+            this.el.style.maxWidth = config.width;
+        }
         if (this.isDraggable) this._makeDraggable();
         if (this.position) this.setPosition(this.position.x, this.position.y);
         

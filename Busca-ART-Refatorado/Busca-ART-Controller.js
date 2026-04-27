@@ -33,7 +33,6 @@ class BuscaARTController {
             if (!this._painelUI) {
                 const autoData = this._extrairDadosContextuaisCasoExistaRmoAberto();
                 this._painelUI = this._uiFactory.montarPainelDeBusca(this, autoData);
-                this._painelUI.toggle();
             } else {
                 this._painelUI.toggle();
             }
@@ -97,6 +96,7 @@ class BuscaARTController {
             if (this._painelUI) {
                 const cardsProntos = resultadosTratados.map(dados => this._uiFactory.fabricarCardResultado(dados));
                 this._painelUI.renderizarResultadosProntos(cardsProntos);
+                this._UI.toast(`${resultadosTratados.length} ART(s) compatível(is) encontrada(s)!`, 'success', 0);
             }
         };
 
