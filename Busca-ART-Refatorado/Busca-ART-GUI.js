@@ -529,13 +529,16 @@ class CardResultado {
             }, "Baixar PDF da ART");
             
             btnDownload.getNode().classList.add('pts-btn-inline');
-            btnDownload.getNode().style.marginLeft = '5px';
             
             const badge = this._uiFacade.createBadge(null, "COMPATÍVEL", "success", "ghost");
-            badge.getNode().style.marginLeft = "10px";
             
-            header.insertBefore(btnDownload.getNode(), titleSpan.nextSibling);
-            header.insertBefore(badge.getNode(), btnDownload.getNode().nextSibling);
+            // Agrupa Título, Botão e Badge para o flexbox 'space-between' empurrar apenas o botão de fechar para a direita
+            const titleGroup = document.createElement('div');
+            titleGroup.style.cssText = 'display: flex; align-items: center; gap: 8px;';
+            header.insertBefore(titleGroup, titleSpan);
+            titleGroup.appendChild(titleSpan);
+            titleGroup.appendChild(btnDownload.getNode());
+            titleGroup.appendChild(badge.getNode());
         }
 
         return this._cardElement;
@@ -577,7 +580,7 @@ class CardResultado {
                     };
                 });
 
-                const tabsNode = this._uiFacade.createTabs ? this._uiFacade.createTabs({ items: itensAba }) : this._fallbackAbaHtml(itensAba);
+                const tabsNode = this._uiFacade.createTabs(null, itensAba).getNode();
                 containerDetalhesDOM.appendChild(tabsNode);
                 
                 // Injeta as views logo abaixo do controlador visual das abas
@@ -592,22 +595,6 @@ class CardResultado {
             }
         }
         this.abrirFecharDetalhes();
-    }
-
-    _fallbackAbaHtml(itensAba) {
-        const d = document.createElement('div');
-        d.style.display = 'flex'; d.style.marginBottom = '15px'; d.style.borderBottom = '1px solid #333';
-        d.innerHTML = itensAba.map(i => `<div style="flex:1; text-align:center; padding:10px; cursor:pointer; font-weight:bold; color: ${i.active ? 'var(--th-primary)' : '#666'}; border-bottom: ${i.active ? '2px solid var(--th-primary)' : 'none'}">${i.label}</div>`).join('');
-        Array.from(d.children).forEach((el, index) => {
-            el.onclick = () => {
-                itensAba[index].onClick();
-                Array.from(d.children).forEach((abaEl, i) => {
-                    abaEl.style.color = i === index ? 'var(--th-primary)' : '#666';
-                    abaEl.style.borderBottom = i === index ? '2px solid var(--th-primary)' : 'none';
-                });
-            };
-        });
-        return d;
     }
 }
 

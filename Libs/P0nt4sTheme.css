@@ -222,24 +222,24 @@
     padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; 
     text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; color: var(--th-text);
 }
-.pts-badge--fill.variant-success { background: var(--th-success); color: white; }
-.pts-badge--fill.variant-warning { background: var(--th-warning); color: white; }
-.pts-badge--fill.variant-info    { background: var(--th-info);    color: white; }
-.pts-badge--fill.variant-error   { background: var(--th-error);   color: white; }
-.pts-badge--fill.variant-primary { background: var(--th-primary); color: white; }
+.pts-badge--fill.variant--success { background: var(--th-success); color: white; }
+.pts-badge--fill.variant--warning { background: var(--th-warning); color: white; }
+.pts-badge--fill.variant--info    { background: var(--th-info);    color: white; }
+.pts-badge--fill.variant--error   { background: var(--th-error);   color: white; }
+.pts-badge--fill.variant--primary { background: var(--th-primary); color: white; }
 
 .pts-badge--outline { background: transparent; border: 1px solid currentColor; }
-.pts-badge--outline.variant-success { color: var(--th-success); }
-.pts-badge--outline.variant-error   { color: var(--th-error); }
-.pts-badge--outline.variant-warning { color: var(--th-warning); }
-.pts-badge--outline.variant-info    { color: var(--th-info); }
-.pts-badge--outline.variant-primary { color: var(--th-primary); }
+.pts-badge--outline.variant--success { color: var(--th-success); }
+.pts-badge--outline.variant--error   { color: var(--th-error); }
+.pts-badge--outline.variant--warning { color: var(--th-warning); }
+.pts-badge--outline.variant--info    { color: var(--th-info); }
+.pts-badge--outline.variant--primary { color: var(--th-primary); }
 
 .pts-badge--ghost { background: rgba(100, 116, 139, 0.15); }
-.pts-badge--ghost.variant-success { color: var(--th-success); background: rgba(16, 185, 129, 0.15); }
-.pts-badge--ghost.variant-error   { color: var(--th-error);   background: rgba(239, 68, 68, 0.15); }
-.pts-badge--ghost.variant-warning { color: var(--th-warning); background: rgba(251, 191, 36, 0.15); }
-.pts-badge--ghost.variant-info    { color: var(--th-info);    background: rgba(56, 189, 248, 0.15); }
+.pts-badge--ghost.variant--success { color: var(--th-success); background: rgba(16, 185, 129, 0.15); }
+.pts-badge--ghost.variant--error   { color: var(--th-error);   background: rgba(239, 68, 68, 0.15); }
+.pts-badge--ghost.variant--warning { color: var(--th-warning); background: rgba(251, 191, 36, 0.15); }
+.pts-badge--ghost.variant--info    { color: var(--th-info);    background: rgba(56, 189, 248, 0.15); }
 
 /* ==========================================================================
    9. TABELAS (.pts-table)

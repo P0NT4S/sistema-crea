@@ -497,7 +497,13 @@ class Table extends DataDisplayBase {
 }
 
 class KeyValue extends DataDisplayBase {
-    constructor(core, parent, objData = {}) {
+    constructor(core, parent, labelOrObj, value) {
+        let objData = {};
+        if (typeof labelOrObj === 'string') {
+            objData[labelOrObj] = value;
+        } else {
+            objData = labelOrObj || {};
+        }
         super(core, parent, 'pts-group', 'div', objData);
         this.render();
     }
@@ -650,6 +656,31 @@ class FlexRow extends UIBase {
     }
 }
 
+class Tabs extends UIBase {
+    constructor(core, parent, items = []) {
+        super(core, parent, 'pts-tabs-container', 'div');
+        this.items = items;
+        this.render();
+    }
+
+    render() {
+        this.el.innerHTML = '';
+        this.items.forEach(item => {
+            const tab = document.createElement('div');
+            tab.className = `pts-tab ${item.active ? 'active' : ''}`;
+            tab.innerHTML = `<span class="pts-tab-label">${item.label}</span>`;
+            
+            tab.onclick = () => {
+                Array.from(this.el.children).forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                if (item.onClick) item.onClick();
+            };
+            
+            this.el.appendChild(tab);
+        });
+    }
+}
+
 // ==========================================================================
 // 4. FACADE (O Orquestrador Público)
 // ==========================================================================
@@ -683,10 +714,11 @@ class UIFacade {
     createBadge(parent, text, variant, appearance) { return new Badge(this.core, parent, text, variant, appearance); }
     createStatusBox(parent, text, variant) { return new StatusBox(this.core, parent, text, variant); }
     createTable(parent, headers, rows, isCompact) { return new Table(this.core, parent, headers, rows, isCompact); }
-    createKeyValue(parent, dataObj) { return new KeyValue(this.core, parent, dataObj); }
+    createKeyValue(parent, labelOrObj, value) { return new KeyValue(this.core, parent, labelOrObj, value); }
     createList(parent, items, isOrdered) { return new List(this.core, parent, items, isOrdered); }
     createInput(parent, label, placeholder, type, initVal) { return new Input(this.core, parent, label, placeholder, type, initVal); }
     createDivider(parent, title, style) { return new Divider(this.core, parent, title, style); }
+    createTabs(parent, items) { return new Tabs(this.core, parent, items); }
     createFlexRow(parent, columns, gap) { return new FlexRow(this.core, parent, columns, gap); }
     
     // Novas injeções para restauração de UI
