@@ -76,9 +76,15 @@ class BuscaARTController {
 
     handleInterromperBusca() {
         if (this._estadoAtualBusca) {
-            // Um tiro gentil: Aciona a flag booleana e o motor (Service) travará com segurança na próxima volta isolada
+            // A. Sinaliza ao motor para parar na próxima oportunidade
             this._estadoAtualBusca.abortar(); 
-            this._painelUI.atualizarStatusBusca("Aguardando interrupção total do motor em background...", "warning");
+            
+            // B. Libera a UI imediatamente para o usuário
+            this._painelUI.atualizarStatusBusca("Busca interrompida pelo usuário.", "error");
+            this._painelUI.bloquearInputs(false);
+            
+            // C. Limpa referências para evitar vazamento de lógica
+            this._estrategiaAtual = null;
         }
     }
 
@@ -88,11 +94,13 @@ class BuscaARTController {
 
     _configurarHooksDoMotor() {
         this._motorServico.onStatusMudou = (tipo, mensagem) => {
+            if (this._estadoAtualBusca?.isCancelado) return;
             this._painelUI.bloquearInputs(tipo === 'loading');
             this._painelUI.atualizarStatusBusca(mensagem, tipo);
         };
         
         this._motorServico.onResultadosEncontrados = (resultadosTratados) => {
+            if (this._estadoAtualBusca?.isCancelado) return;
             if (this._painelUI) {
                 const cardsProntos = resultadosTratados.map(dados => this._uiFactory.fabricarCardResultado(dados));
                 this._painelUI.renderizarResultadosProntos(cardsProntos);
@@ -101,12 +109,15 @@ class BuscaARTController {
         };
 
         this._motorServico.onPausadoParaContinuar = (estadoPaginacaoAtual) => {
+            if (this._estadoAtualBusca?.isCancelado) return;
             this._painelUI.bloquearInputs(false);
             this._injetarBotaoDeContinuarFluxo(estadoPaginacaoAtual);
         };
 
         this._motorServico.onFimDaBusca = (mensagem) => {
-            this._painelUI.atualizarStatusBusca(mensagem, "success");
+            if (this._estadoAtualBusca?.isCancelado) return;
+            const variant = mensagem.toLowerCase().includes('interrompida') ? "error" : "success";
+            this._painelUI.atualizarStatusBusca(mensagem, variant);
             this._painelUI.bloquearInputs(false);
             this._estrategiaAtual = null; // Garbage clean
         };

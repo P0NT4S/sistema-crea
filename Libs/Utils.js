@@ -291,5 +291,16 @@ class CoreUtils {
         this.log = new Logger(logName);
         this.dom = new DomObserver(this.log); 
         this.text = new TextFormatter();
+        this.clipboard = {
+            copy: (text, apenasNumeros = false) => {
+                if (!text) return Promise.reject("Texto vazio");
+                const valorFinal = apenasNumeros ? this.text.apenasNumeros(text) : text;
+                return navigator.clipboard.writeText(valorFinal).then(() => {
+                    document.body.dispatchEvent(new CustomEvent('pts-toast', { 
+                        detail: { message: `Copiado: ${valorFinal}`, type: 'success' } 
+                    }));
+                });
+            }
+        };
     }
 }

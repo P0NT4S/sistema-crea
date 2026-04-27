@@ -87,7 +87,7 @@ class VarredorDeArtsService {
 
             // Exaustão do "While" (Três saídas)
             if (estado.isCancelado) {
-                // Note que o cancelamento explícito na View não demanda uma renderização de fim absoluto sujo.
+                this.onFimDaBusca('Busca interrompida pelo usuário.');
                 return; 
             }
 

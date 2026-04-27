@@ -20,7 +20,7 @@ class ThemeManager {
     static toggle() {
         const html = document.documentElement;
         const isLight = html.getAttribute('data-theme') === 'light';
-        
+
         if (isLight) {
             html.removeAttribute('data-theme');
             localStorage.setItem(this.STORAGE_KEY, 'dark');
@@ -42,7 +42,7 @@ class UIBase {
         this.core = core;
         this.parent = parent;
         this.customClasses = customClasses;
-        
+
         this.el = document.createElement(tag);
         if (this.customClasses) this._addClass(this.customClasses);
     }
@@ -70,13 +70,13 @@ class UIBase {
 }
 
 class SemanticBase extends UIBase {
-    static ALLOWED_VARIANTS = ["success", "error", "warning", "info", "primary"];
+    static ALLOWED_VARIANTS = ["success", "error", "warning", "info", "primary", "loading"];
 
     constructor(core, parent, customClasses, tag, baseClass, variant = "primary") {
         super(core, parent, customClasses, tag);
         this.baseClass = baseClass;
         this.variant = this._getSafeVariant(variant);
-        
+
         this._addClass(this.baseClass);
         this._applyVariantClass();
     }
@@ -115,10 +115,10 @@ class ContainerBase extends UIBase {
         super(core, parent, customClasses, 'div');
         this.isCompact = isCompact;
         this.hasCloseButton = hasCloseButton;
-        
+
         this.titleNode = document.createElement('div');
         this.bodyNode = document.createElement('div');
-        
+
         this.setCompact(this.isCompact);
     }
 
@@ -154,7 +154,7 @@ class DataDisplayBase extends UIBase {
     clear() { this.updateData([]); }
     getData() { return this.data; }
     lenData() { return Array.isArray(this.data) ? this.data.length : Object.keys(this.data).length; }
-    
+
     orderBy(field, direction = 'asc') {
         if (Array.isArray(this.data)) {
             this.data.sort((a, b) => {
@@ -175,11 +175,11 @@ class FormBase extends UIBase {
     }
 
     getValue() { return this.value; }
-    setValue(val) { 
-        this.value = val; 
-        this._syncUI(); 
+    setValue(val) {
+        this.value = val;
+        this._syncUI();
     }
-    
+
     setDisabled(state) {
         this.isDisabled = state;
         this._syncUI();
@@ -253,10 +253,10 @@ class Toast extends SemanticTextBase {
         // Toasts são montados no container global
         super(core, Toast._getContainer(), 'pts-toast', 'div', 'pts-toast', variant, text);
         this.duration = duration;
-        
-        const icons = { success:'✅', error:'❌', warning:'⚠️', info:'ℹ️', primary: '🟣' };
-        this.setText(`<span>${icons[this.variant]||'•'}</span><span>${this.text}</span>`);
-        
+
+        const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️', primary: '🟣' };
+        this.setText(`<span>${icons[this.variant] || '•'}</span><span>${this.text}</span>`);
+
         this.el.style.cursor = 'pointer';
         this.el.onclick = () => this.hide();
     }
@@ -330,24 +330,24 @@ class Card extends ContainerBase {
     constructor(core, parent, config = {}) {
         super(core, parent, 'pts-card', false, config.closeButton || false);
         this.variant = config.variant || "primary";
-        
+
         // Simulação de composição com SemanticBase (Borda Colorida)
         this._addClass(`pts-card--${this.variant}`);
-        
+
         this.titleNode.className = 'pts-card-header';
         if (config.title) this.setTitle(`<span class="pts-card-title">${config.title}</span>`);
-        
+
         if (this.hasCloseButton) {
             const btn = document.createElement('button');
             btn.className = 'pts-close-btn';
             btn.innerHTML = '&times;';
-            btn.onclick = () => { this.destroy(); if(config.onClose) config.onClose(); };
+            btn.onclick = () => { this.destroy(); if (config.onClose) config.onClose(); };
             this.titleNode.appendChild(btn);
         }
 
         this.el.appendChild(this.titleNode);
         this.el.appendChild(this.bodyNode);
-        
+
         if (config.content) this.setContent(config.content);
     }
 
@@ -356,9 +356,9 @@ class Card extends ContainerBase {
         this.variant = ["success", "error", "warning", "info", "primary"].includes(newVariant) ? newVariant : "primary";
         this._addClass(`pts-card--${this.variant}`);
     }
-    
+
     getVariant() { return this.variant; }
-    
+
     // Sobrescreve para injetar HTML diretamente se formatado
     setTitle(html) { this.titleNode.innerHTML = html; }
 }
@@ -371,7 +371,7 @@ class Panel extends ContainerBase {
         this.position = config.pos || null;
 
         this.el.id = config.id || `panel-${Date.now()}`;
-        
+
         this.titleNode.className = 'pts-panel-header';
         this.bodyNode.className = 'pts-panel-body';
 
@@ -401,7 +401,7 @@ class Panel extends ContainerBase {
         }
         if (this.isDraggable) this._makeDraggable();
         if (this.position) this.setPosition(this.position.x, this.position.y);
-        
+
         // Inicia invisível
         this.el.style.display = 'none';
     }
@@ -409,38 +409,38 @@ class Panel extends ContainerBase {
     _makeDraggable() {
         let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
         this.titleNode.style.cursor = 'move';
-        
+
         this.titleNode.onmousedown = (e) => {
             if (e.target.closest('.pts-close-btn')) return;
             e.preventDefault();
             pos3 = e.clientX; pos4 = e.clientY;
-            
+
             // Fixa as coordenadas exatas e desliga âncoras CSS antes de começar a mover.
             // Impede que o navegador tente "espremer" o painel ao chegar na borda.
             const rect = this.el.getBoundingClientRect();
-            this.el.style.right = 'auto'; 
+            this.el.style.right = 'auto';
             this.el.style.bottom = 'auto';
-            this.el.style.transform = 'none'; 
+            this.el.style.transform = 'none';
             this.el.style.margin = '0';
-            this.el.style.left = rect.left + 'px'; 
+            this.el.style.left = rect.left + 'px';
             this.el.style.top = rect.top + 'px';
-            
+
             document.onmouseup = () => { document.onmouseup = null; document.onmousemove = null; };
-            
+
             document.onmousemove = (e) => {
                 e.preventDefault();
                 pos1 = pos3 - e.clientX; pos2 = pos4 - e.clientY;
                 pos3 = e.clientX; pos4 = e.clientY;
-                
+
                 let newTop = this.el.offsetTop - pos2;
                 let newLeft = this.el.offsetLeft - pos1;
-                
+
                 // Impede que o cabeçalho suma pelo fundo, mas deixa o corpo vazar
                 newTop = Math.max(0, Math.min(newTop, window.innerHeight - this.titleNode.offsetHeight));
-                
+
                 // Trava no lado esquerdo (0), e na direita permite que 50% do painel saia da tela
                 newLeft = Math.max(0, Math.min(newLeft, window.innerWidth - (this.el.offsetWidth * 0.5)));
-                
+
                 this.el.style.top = newTop + "px";
                 this.el.style.left = newLeft + "px";
             };
@@ -490,12 +490,11 @@ class Table extends DataDisplayBase {
         const tableClass = this.isCompact ? 'pts-table pts-table--compact' : 'pts-table';
         const thead = this.headers.length ? `<thead><tr>${this.headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>` : '';
         const colspan = Math.max(this.headers.length, 1);
-        
-        const tbody = `<tbody>${
-            this.data.length > 0
-                ? this.data.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`).join('')
-                : `<tr><td colspan="${colspan}">${this.renderEmptyState("Nenhum registro encontrado.")}</td></tr>`
-        }</tbody>`;
+
+        const tbody = `<tbody>${this.data.length > 0
+            ? this.data.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`).join('')
+            : `<tr><td colspan="${colspan}">${this.renderEmptyState("Nenhum registro encontrado.")}</td></tr>`
+            }</tbody>`;
 
         this.el.innerHTML = `<table class="${tableClass}">${thead}${tbody}</table>`;
     }
@@ -520,21 +519,21 @@ class KeyValue extends DataDisplayBase {
         this.el.innerHTML = '';
         Object.entries(this.data).forEach(([label, val]) => {
             const row = document.createElement('div');
-            row.style.cssText = 'display: flex; justify-content: flex-start; align-items: baseline; margin-bottom: 4px; border-bottom: 1px dotted rgba(128,128,128,0.25); gap: 4px;';
-            
+            row.style.cssText = 'display: flex; justify-content: flex-start; align-items: baseline';
+
             const labelEl = document.createElement('div');
             labelEl.className = 'pts-kv-label';
-            labelEl.style.cssText = 'font-weight: bold; flex-shrink: 0; font-size: 13px; padding-bottom: 2px;';
+            labelEl.style.cssText = 'font-weight: bold; flex-shrink: 0; font-size: 13px;';
             labelEl.innerText = `${label}:`;
-            
+
             const valueEl = document.createElement('div');
             valueEl.className = 'pts-kv-value';
-            valueEl.style.cssText = 'padding-bottom: 2px; color: var(--th-text-light); text-align: left; word-break: break-word;';
-            
+            valueEl.style.cssText = 'color: var(--th-text-light); text-align: left; word-break: break-word;';
+
             if (typeof val === 'string') valueEl.innerHTML = val;
             else if (val instanceof HTMLElement) valueEl.appendChild(val);
             else if (val && typeof val.getNode === 'function') valueEl.appendChild(val.getNode());
-            
+
             row.append(labelEl, valueEl);
             this.el.appendChild(row);
         });
@@ -565,7 +564,7 @@ class Input extends FormBase {
         this.label = label;
         this.placeholder = placeholder;
         this.type = type;
-        
+
         this.render();
     }
 
@@ -574,13 +573,13 @@ class Input extends FormBase {
             <label class="pts-label">${this.label}</label>
             <input type="${this.type}" class="pts-input" placeholder="${this.placeholder}" value="${this.value}">
         `;
-        
+
         // Atrela o binding bi-direcional
         const inputNode = this.el.querySelector('input');
         inputNode.addEventListener('input', (e) => {
             this.value = e.target.value;
         });
-        
+
         this._syncUI();
     }
 
@@ -596,10 +595,19 @@ class Input extends FormBase {
 class CopyableText extends UIBase {
     constructor(core, parent, display, cleanValue, tooltip = "Copiar dado", variant = "info") {
         super(core, parent, 'pts-copy', 'span');
-        this.el.dataset.clean = cleanValue;
+        if (cleanValue) this.el.dataset.clean = cleanValue;
         this.el.title = tooltip;
-        this.el.style.cssText = `color: var(--th-${variant}); cursor: pointer; text-decoration: underline dashed; font-weight: bold;`;
+        this.el.style.cssText = `color: var(--th-${variant}); cursor: pointer; font-weight: bold;`;
         this.el.innerText = display;
+
+        this.el.onclick = (e) => {
+            e.stopPropagation();
+            const cleanVal = this.el.dataset.clean;
+            // Se existir um valor 'clean' no dataset, usamos ele (já está pré-processado).
+            // Caso contrário, usamos o texto visível. Em ambos os casos, não limpamos de novo aqui.
+            const textoParaCopiar = cleanVal || this.el.innerText;
+            this.core.clipboard.copy(textoParaCopiar, false);
+        };
     }
 }
 
@@ -634,7 +642,7 @@ class Divider extends UIBase {
         this.title = title;
         const titleHtml = this.title ? `<div style="font-weight: 600; color: var(--th-primary-light); margin-bottom: 4px;">${this.title}</div>` : '';
         const borderCss = this.style === "none" ? "border: none;" : `border-top: 1px ${this.style} rgba(255,255,255,0.1);`;
-        
+
         this.el.style.cssText = `${borderCss} margin-top: 8px; padding-top: 8px;`;
         this.el.innerHTML = titleHtml;
     }
@@ -645,7 +653,7 @@ class FlexRow extends UIBase {
         super(core, parent, 'pts-row', 'div');
         this.gap = gap;
         this.columns = columns; // Array de UIBase ou strings HTML
-        
+
         this.el.style.gap = this.gap;
         this.el.style.marginBottom = "8px";
         this.render();
@@ -656,10 +664,10 @@ class FlexRow extends UIBase {
         this.columns.forEach(col => {
             const colWrapper = document.createElement('div');
             colWrapper.className = 'pts-col';
-            
+
             if (typeof col === 'string') colWrapper.innerHTML = col;
             else if (col instanceof UIBase) colWrapper.appendChild(col.getNode());
-            
+
             this.el.appendChild(colWrapper);
         });
     }
@@ -676,15 +684,17 @@ class Tabs extends UIBase {
         this.el.innerHTML = '';
         this.items.forEach(item => {
             const tab = document.createElement('div');
+            tab.style.flex = "1";
+            tab.style.textAlign = "center";
             tab.className = `pts-tab ${item.active ? 'active' : ''}`;
             tab.innerHTML = `<span class="pts-tab-label">${item.label}</span>`;
-            
+
             tab.onclick = () => {
                 Array.from(this.el.children).forEach(c => c.classList.remove('active'));
                 tab.classList.add('active');
                 if (item.onClick) item.onClick();
             };
-            
+
             this.el.appendChild(tab);
         });
     }
@@ -699,6 +709,12 @@ class UIFacade {
         if (!coreUtils) throw new Error("[UIFacade] Instância de CoreUtils é obrigatória.");
         this.core = coreUtils;
         ThemeManager.init();
+
+        // Listener global para componentes desacoplados emitirem toasts
+        document.body.addEventListener('pts-toast', (e) => {
+            const { message, type } = e.detail;
+            this.toast(message, type || 'info');
+        });
     }
 
     toggleTheme() { return ThemeManager.toggle(); }
@@ -710,9 +726,9 @@ class UIFacade {
         return t;
     }
     success(msg) { return this.toast(msg, 'success'); }
-    error(msg)   { return this.toast(msg, 'error', 6000); }
+    error(msg) { return this.toast(msg, 'error', 6000); }
     warning(msg) { return this.toast(msg, 'warning'); }
-    info(msg)    { return this.toast(msg, 'info'); }
+    info(msg) { return this.toast(msg, 'info'); }
 
     // --- Instanciadores (Factory Methods OOP) ---
     createPanel(config) { return new Panel(this.core, config); }
@@ -729,7 +745,7 @@ class UIFacade {
     createDivider(parent, title, style) { return new Divider(this.core, parent, title, style); }
     createTabs(parent, items) { return new Tabs(this.core, parent, items); }
     createFlexRow(parent, columns, gap) { return new FlexRow(this.core, parent, columns, gap); }
-    
+
     // Novas injeções para restauração de UI
     createCopyableText(parent, display, cleanValue, tooltip, variant) { return new CopyableText(this.core, parent, display, cleanValue, tooltip, variant); }
     createScrollableArea(parent, contentHtml, maxHeight) { return new ScrollableArea(this.core, parent, contentHtml, maxHeight); }

@@ -214,7 +214,7 @@ class AbaDetalheAtividades extends AbaDetalheBase {
         this._dados.atividadesTecnicas.forEach((grupo, idx) => {
             if (grupo && grupo.itens && Array.isArray(grupo.itens)) {
                 const titleNode = document.createElement('div');
-                titleNode.style.cssText = `font-weight: bold; color: var(--th-primary-light); margin-bottom: 4px; ${idx > 0 ? 'margin-top: 12px;' : ''}`;
+                titleNode.style.cssText = `font-weight: bold; color: var(--th-text); margin-bottom: 4px; ${idx > 0 ? 'margin-top: 12px;' : ''}`;
                 titleNode.innerText = grupo.topico;
                 containerNode.appendChild(titleNode);
                 
@@ -251,7 +251,7 @@ class AbaDetalheObservacoes extends AbaDetalheBase {
     render() {
         this._root.innerHTML = '';
         if (this._dados.observacoes) {
-            const content = `<div style="font-weight: bold; color: var(--th-primary-light); margin-bottom: 4px; font-size: 13px;">Observações</div><div style="word-break: break-word; white-space: pre-wrap;">${this._dados.observacoes}</div>`;
+            const content = `<div style="font-weight: bold; color: var(--th-text); margin-bottom: 4px; font-size: 13px;">Observações</div><div style="word-break: break-word; white-space: pre-wrap;">${this._dados.observacoes}</div>`;
             this._root.appendChild(this._uiFacade.createScrollableArea(null, content).getNode());
         } else {
             this._root.appendChild(this._uiFacade.createEmptyState(null, "Nenhuma observação registrada.").getNode());
@@ -281,7 +281,8 @@ class AbaDetalheResponsaveis extends AbaDetalheBase {
         this._root.innerHTML = '';
 
         const profHeader = document.createElement('div');
-        profHeader.innerHTML = `<div style="font-weight: bold; color: var(--th-primary-light); font-size: 13px;">Profissional Responsável</div>`;
+        profHeader.style.cssText = 'display: flex; justify-content: flex-start; align-items: center; margin-bottom: 4px; gap: 8px;';
+        profHeader.innerHTML = `<div style="font-weight: bold; color: var(--th-text); font-size: 13px;">Profissional Responsável</div>`;
         const btnEnvProfAnchor = document.createElement('div');
         profHeader.appendChild(btnEnvProfAnchor);
         const btnEnvProf = this._uiFacade.createIconButton(btnEnvProfAnchor, '👤', () => this._inserirNovoEnvolvido("Profissional", { 
@@ -294,11 +295,12 @@ class AbaDetalheResponsaveis extends AbaDetalheBase {
         this._root.appendChild(this._uiFacade.createKeyValue(null, "Título", this._dados.responsavel.titulo || "N/A").getNode());
         
         const regProfLimpo = this._utilsCore.text.apenasNumeros(this._dados.responsavel.registro || "");
-        const cpProf = this._uiFacade.createCopyableText(null, this._dados.responsavel.registro || "N/A", regProfLimpo);
+        const cpProf = this._uiFacade.createCopyableText(null, this._dados.responsavel.registro || "N/A");
         this._root.appendChild(this._uiFacade.createKeyValue(null, "Registro", cpProf).getNode());
 
         const empHeader = document.createElement('div');
-        empHeader.innerHTML = `<div style="font-weight: bold; color: var(--th-primary-light); font-size: 13px; margin-top: 10px;">Empresa Contratada</div>`;
+        empHeader.style.cssText = 'display: flex; justify-content: flex-start; align-items: center; margin-bottom: 4px; margin-top: 10px; gap: 8px;';
+        empHeader.innerHTML = `<div style="font-weight: bold; color: var(--th-text); font-size: 13px;">Empresa Contratada</div>`;
         
         if (this._dados.responsavel.empresaContratada && this._dados.responsavel.empresaContratada.nome) {
             const btnEnvEmpAnchor = document.createElement('div');
@@ -355,7 +357,8 @@ class AbaDetalheOutros extends AbaDetalheBase {
         this._root.innerHTML = '';
         
         const propHeader = document.createElement('div');
-        propHeader.innerHTML = `<div style="font-weight: bold; color: var(--th-primary-light); font-size: 13px;">Proprietário da Obra</div>`;
+        propHeader.style.cssText = 'display: flex; justify-content: flex-start; align-items: center; margin-bottom: 4px; gap: 8px;';
+        propHeader.innerHTML = `<div style="font-weight: bold; color: var(--th-text); font-size: 13px;">Proprietário da Obra</div>`;
         const btnFillAnchor = document.createElement('div');
         propHeader.appendChild(btnFillAnchor);
         const btnFillProp = this._uiFacade.createIconButton(btnFillAnchor, '📌', () => this._injetarDadosProprietario(), 'Preencher dados na RMO', true);
@@ -376,8 +379,17 @@ class AbaDetalheOutros extends AbaDetalheBase {
         const cpCep = cepLimpo ? this._uiFacade.createCopyableText(null, cepDisplay, cepLimpo) : "N/A";
         this._root.appendChild(this._uiFacade.createKeyValue(null, "CEP", cpCep).getNode());
 
+        const contrHeader = document.createElement('div');
+        contrHeader.innerHTML = `<div style="font-weight: bold; color: var(--th-text); font-size: 13px; margin-top: 10px;">Contratante</div>`;
+        this._root.appendChild(contrHeader);
+        
+        this._root.appendChild(this._uiFacade.createKeyValue(null, "Nome", this._dados.contrato.contratante || "N/A").getNode());
+        const docContrLimpo = this._utilsCore.text.apenasNumeros(this._dados.contrato.documento || "");
+        const cpContrDoc = docContrLimpo ? this._uiFacade.createCopyableText(null, this._dados.contrato.documento, docContrLimpo) : "N/A";
+        this._root.appendChild(this._uiFacade.createKeyValue(null, "Doc", cpContrDoc).getNode());
+
         const artsHeader = document.createElement('div');
-        artsHeader.style.cssText = 'font-weight: bold; color: var(--th-primary-light); margin-top: 10px; font-size: 13px;';
+        artsHeader.style.cssText = 'font-weight: bold; color: var(--th-text); margin-top: 10px; font-size: 13px;';
         artsHeader.innerText = "ARTs Associadas";
         this._root.appendChild(artsHeader);
 
@@ -662,13 +674,16 @@ class PainelBuscaControle {
         if (!this._conteinerResultados) return;
         
         this._conteinerResultados.querySelectorAll('.pts-status-box').forEach(el => el.remove());
-        const statusBoxObj = this._uiFacade.createStatusBox(this._conteinerResultados, msg, tipo);
+        
+        const msgFinal = tipo === 'loading' ? `⏳ ${msg}` : msg;
+        const variantFinal = tipo === 'loading' ? 'loading' : tipo;
+        const statusBoxObj = this._uiFacade.createStatusBox(this._conteinerResultados, msgFinal, variantFinal);
         
         // Uso Seguro e Nativo do DOM sem depender de métodos sujos como 'afterbegin' pro mount OOP
         this._conteinerResultados.insertBefore(statusBoxObj.getNode(), this._conteinerResultados.firstChild);
 
         if (this._resultados.length > 0) {
-            const statusBoxBottom = this._uiFacade.createStatusBox(this._conteinerResultados, msg, tipo);
+            const statusBoxBottom = this._uiFacade.createStatusBox(this._conteinerResultados, msgFinal, tipo);
             this._conteinerResultados.appendChild(statusBoxBottom.getNode());
         }
     }
