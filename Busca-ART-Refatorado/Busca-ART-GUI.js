@@ -125,6 +125,11 @@ class ConteinerFormulariosBusca {
         this.panelInstance.getNode().querySelector('#art-btn-search').style.display = isLoading ? 'none' : 'flex';
         this.panelInstance.getNode().querySelector('#art-btn-cancel').style.display = isLoading ? 'flex' : 'none';
         
+        if (this._tabsNode) {
+            this._tabsNode.style.pointerEvents = isLoading ? 'none' : 'auto';
+            this._tabsNode.style.opacity = isLoading ? '0.5' : '1';
+        }
+
         const formAtivo = this._formularios.find(f => f.getModoID() === this._modoAtivo);
         if (formAtivo) formAtivo.bloquearInputs(isLoading);
     }
@@ -248,7 +253,7 @@ class AbaDetalheObservacoes extends AbaDetalheBase {
     render() {
         this._root.innerHTML = '';
         if (this._dados.observacoes) {
-            const content = `<div style="font-weight: bold; margin-bottom: 4px; font-size: 13px;">Observações</div><div>${this._dados.observacoes}</div>`;
+            const content = `<div style="font-weight: bold; margin-bottom: 4px; font-size: 13px;">Observações</div><div style="word-break: break-word; white-space: pre-wrap;">${this._dados.observacoes}</div>`;
             this._root.appendChild(this._uiFacade.createScrollableArea(null, content).getNode());
         } else {
             this._root.appendChild(this._uiFacade.createEmptyState(null, "Nenhuma observação registrada.").getNode());
@@ -451,19 +456,23 @@ class CardResultado {
         const rootContent = document.createElement('div');
         
         // 1. Label Proprietário/Contratante
-        const propLabel = this._dadosART.contratanteName ? "Contratante:" : "Proprietário:";
+        const propLabel = this._dadosART.contratanteName ? "Contratante" : "Proprietário";
         const propValue = this._dadosART.contratanteName || this._dadosART.owner || "N/A";
         const kvNode1 = this._uiFacade.createKeyValue(null, propLabel, propValue);
         rootContent.appendChild(kvNode1.getNode());
 
         // 2. Linha flexível com Doc e Data
-        let docNode = '⏳...';
+        let docNode;
         if (this._dadosART.docFormatado) {
             docNode = this._uiFacade.createCopyableText(null, this._dadosART.docFormatado, this._dadosART.docLimpo);
+        } else {
+            docNode = document.createElement('span');
+            docNode.className = 'card-doc-placeholder';
+            docNode.innerText = '⏳...';
         }
         
-        const kvDoc = this._uiFacade.createKeyValue(null, "Doc:", docNode);
-        const kvData = this._uiFacade.createKeyValue(null, "Data:", this._dadosART.dataRegistro || "N/A");
+        const kvDoc = this._uiFacade.createKeyValue(null, "Doc", docNode);
+        const kvData = this._uiFacade.createKeyValue(null, "Data", this._dadosART.dataRegistro || "N/A");
         const rowDados = this._uiFacade.createFlexRow(null, [kvDoc, kvData]);
         rootContent.appendChild(rowDados.getNode());
 
@@ -476,6 +485,7 @@ class CardResultado {
         const btnAnchor = document.createElement('div');
         rowDiv.appendChild(btnAnchor);
         const btnDetalhesObj = this._uiFacade.createIconButton(btnAnchor, 'ℹ', () => this._handleToggleDetalhes(btnDetalhesObj), 'Ver Detalhes');
+        this._btnDetalhesObj = btnDetalhesObj;
         btnDetalhesObj.mount();
 
         // 4. Ancora para Detalhes (Lazy Load)
@@ -541,9 +551,9 @@ class CardResultado {
         const container = this._cardElement.querySelector('.card-detalhes-ancora');
         container.style.display = this._detalhesAbertos ? 'block' : 'none';
         
-        // Puxa o DOM element real do IconButton e altera apenas seu HTML interno para a "seta"
-        const btnNode = this._cardElement.querySelector('.pts-btn-icon');
-        if (btnNode) btnNode.innerHTML = this._detalhesAbertos ? '▲' : 'ℹ';
+        if (this._btnDetalhesObj) {
+            this._btnDetalhesObj.setIcon(this._detalhesAbertos ? '▲' : 'ℹ');
+        }
     }
 
     async _handleToggleDetalhes(botaoObjFacade) {
@@ -552,6 +562,20 @@ class CardResultado {
             try {
                 const html = await this._commBridge.apiART.fetchText(this._dadosART.url);
                 const dadosProfundos = this._creaHelper.parser.parseDetalhe(html);
+                
+                if (!this._dadosART.docFormatado) {
+                    const docStr = dadosProfundos.contrato.documento || dadosProfundos.obra.documento;
+                    const docLimpo = dadosProfundos.contrato.documentoLimpo || dadosProfundos.obra.documentoLimpo;
+                    const placeholder = this._cardElement.querySelector('.card-doc-placeholder');
+                    if (placeholder) {
+                        if (docStr) {
+                            const copyNode = this._uiFacade.createCopyableText(null, docStr, docLimpo).getNode();
+                            placeholder.parentNode.replaceChild(copyNode, placeholder);
+                        } else {
+                            placeholder.innerText = 'N/A';
+                        }
+                    }
+                }
                 
                 // Distribui os dados para as abas instanciadas e as renderiza
                 this._abasDetalhes.forEach(aba => aba.setDados(dadosProfundos));
@@ -652,6 +676,11 @@ class PainelBuscaControle {
         
         // Uso Seguro e Nativo do DOM sem depender de métodos sujos como 'afterbegin' pro mount OOP
         this._conteinerResultados.insertBefore(statusBoxObj.getNode(), this._conteinerResultados.firstChild);
+
+        if (this._resultados.length > 0) {
+            const statusBoxBottom = this._uiFacade.createStatusBox(this._conteinerResultados, msg, tipo);
+            this._conteinerResultados.appendChild(statusBoxBottom.getNode());
+        }
     }
 
     renderizarResultadosProntos(cardsProntos) {

@@ -515,16 +515,16 @@ class KeyValue extends DataDisplayBase {
         this.el.innerHTML = '';
         Object.entries(this.data).forEach(([label, val]) => {
             const row = document.createElement('div');
-            row.style.cssText = 'display: flex; justify-content: flex-start; align-items: flex-end; margin-bottom: 4px; border-bottom: 1px dotted rgba(128,128,128,0.25);';
+            row.style.cssText = 'display: flex; justify-content: flex-start; align-items: baseline; margin-bottom: 4px; border-bottom: 1px dotted rgba(128,128,128,0.25); gap: 4px;';
             
             const labelEl = document.createElement('div');
             labelEl.className = 'pts-kv-label';
-            labelEl.style.cssText = 'font-weight: bold; width: 35%; flex-shrink: 0; font-size: 13px; padding-bottom: 2px;';
+            labelEl.style.cssText = 'font-weight: bold; flex-shrink: 0; font-size: 13px; padding-bottom: 2px;';
             labelEl.innerText = `${label}:`;
             
             const valueEl = document.createElement('div');
             valueEl.className = 'pts-kv-value';
-            valueEl.style.cssText = 'flex-grow: 1; padding-bottom: 2px; color: var(--th-text-light); text-align: right; word-break: break-all;';
+            valueEl.style.cssText = 'padding-bottom: 2px; color: var(--th-text-light); text-align: left; word-break: break-word;';
             
             if (typeof val === 'string') valueEl.innerHTML = val;
             else if (val instanceof HTMLElement) valueEl.appendChild(val);
@@ -602,7 +602,11 @@ class ScrollableArea extends UIBase {
     constructor(core, parent, contentHtml, maxHeight = "250px") {
         super(core, parent, '', 'div');
         this.el.style.cssText = `max-height: ${maxHeight}; overflow-y: auto; padding-right: 5px; color: var(--th-text-light); font-size: 13px; line-height: 1.4;`;
-        this.el.innerHTML = contentHtml;
+        if (typeof contentHtml === 'string') {
+            this.el.innerHTML = contentHtml;
+        } else if (contentHtml instanceof HTMLElement) {
+            this.el.appendChild(contentHtml);
+        }
     }
 }
 
