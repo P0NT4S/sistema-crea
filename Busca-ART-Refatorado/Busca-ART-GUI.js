@@ -136,20 +136,12 @@ class ConteinerFormulariosBusca {
             onClick: () => this._alternarModo(form.getModoID())
         }));
 
-        const tabs = this._uiFacade.createTabs ? this._uiFacade.createTabs({ items: itensAba }) : this._fallbackAbaHtml(itensAba);
-        this._tabsNode = tabs; // Referência para update visual
+        const tabsObj = this._uiFacade.createTabs(null, itensAba);
+        this._tabsNode = tabsObj.getNode();
         
         const panelBody = this.panelInstance.getNode().querySelector('.pts-panel-body') || this.panelInstance.getNode();
-        panelBody.insertBefore(tabs, panelBody.firstChild);
-        return tabs;
-    }
-    
-    _fallbackAbaHtml(itensAba) {
-        const d = document.createElement('div');
-        d.style.display = 'flex'; d.style.marginBottom = '15px'; d.style.borderBottom = '1px solid #333';
-        d.innerHTML = itensAba.map(i => `<div style="flex:1; text-align:center; padding:10px; cursor:pointer; font-weight:bold; color: ${i.active ? 'var(--th-primary)' : '#666'}; border-bottom: ${i.active ? '2px solid var(--th-primary)' : 'none'}">${i.label}</div>`).join('');
-        Array.from(d.children).forEach((el, index) => el.onclick = itensAba[index].onClick);
-        return d;
+        panelBody.insertBefore(this._tabsNode, panelBody.firstChild);
+        return this._tabsNode;
     }
 
     _alternarModo(modoID) {
@@ -162,8 +154,8 @@ class ConteinerFormulariosBusca {
         if (this._tabsNode) {
             Array.from(this._tabsNode.children).forEach((el, index) => {
                 const ativo = this._formularios[index].getModoID() === modoID;
-                el.style.color = ativo ? 'var(--th-primary)' : '#666';
-                el.style.borderBottom = ativo ? '2px solid var(--th-primary)' : 'none';
+                if (ativo) el.classList.add('active');
+                else el.classList.remove('active');
             });
         }
     }
