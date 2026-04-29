@@ -53,6 +53,9 @@ class BuscaARTController {
             if (modo === 'address') this._estrategiaAtual = new FiltroPorEndereco(dadosForm, dependenciasDomain);
             else if (modo === 'contract') this._estrategiaAtual = new FiltroPorContrato(dadosForm, dependenciasDomain);
             else if (modo === 'document') this._estrategiaAtual = new FiltroPorDocumento(dadosForm, dependenciasDomain);
+            else if (modo === 'professional') this._estrategiaAtual = new FiltroPorProfissional(dadosForm, dependenciasDomain);
+            else if (modo === 'direct') this._estrategiaAtual = new FiltroPorNumeroART(dadosForm, dependenciasDomain);
+            else if (modo === 'cnae') this._estrategiaAtual = new ConsultaEmpresaCnae(dadosForm, dependenciasDomain);
             else throw new Error("Aba de busca não configurada.");
 
             this._painelUI.limparResultados();

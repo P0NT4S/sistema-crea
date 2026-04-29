@@ -19,11 +19,11 @@ class FormularioBusca {
         this._modoID = modoID;
         this._tituloAba = tituloAba;
         this._uiFacade = uiFacade;
-        
+
         this._conteiner = document.createElement('div');
         this._conteiner.id = `form-${modoID}`;
         this._conteiner.style.display = 'none';
-        
+
         this._inputs = {}; // Guarda as instâncias de FormBase (Input, Select, etc)
 
         // Aciona a injeção dos campos no momento da construção
@@ -35,7 +35,7 @@ class FormularioBusca {
     getModoID() { return this._modoID; }
     getTituloAba() { return this._tituloAba; }
     getNode() { return this._conteiner; }
-    
+
     show() { this._conteiner.style.display = 'block'; }
     hide() { this._conteiner.style.display = 'none'; }
 
@@ -75,7 +75,7 @@ class ConteinerFormulariosBusca {
     addModo(formComponent) {
         this._formularios.push(formComponent);
         this._ordemDosModos.push(formComponent.getModoID());
-        
+
         if (!this._modoAtivo) {
             this._modoAtivo = formComponent.getModoID();
         }
@@ -110,11 +110,11 @@ class ConteinerFormulariosBusca {
 
         const formsContainer = panelBodyWrapper.querySelector('#forms-container');
         this._formularios.forEach(form => formsContainer.appendChild(form.getNode()));
-        
+
         this._construirAbas();
         this._bindEvents();
         this._alternarModo(this._modoAtivo);
-        
+
         this._esteConteiner = this.panelInstance.getNode().querySelector('#art-results-container');
         return this._esteConteiner;
     }
@@ -122,7 +122,7 @@ class ConteinerFormulariosBusca {
     setStatusCarregando(isLoading) {
         this.panelInstance.getNode().querySelector('#art-btn-search').style.display = isLoading ? 'none' : 'flex';
         this.panelInstance.getNode().querySelector('#art-btn-cancel').style.display = isLoading ? 'flex' : 'none';
-        
+
         if (this._tabsNode) {
             this._tabsNode.style.pointerEvents = isLoading ? 'none' : 'auto';
             this._tabsNode.style.opacity = isLoading ? '0.5' : '1';
@@ -141,7 +141,7 @@ class ConteinerFormulariosBusca {
 
         const tabsObj = this._uiFacade.createTabs(null, itensAba);
         this._tabsNode = tabsObj.getNode();
-        
+
         const panelBody = this.panelInstance.getNode().querySelector('.pts-panel-body') || this.panelInstance.getNode();
         panelBody.insertBefore(this._tabsNode, panelBody.firstChild);
         return this._tabsNode;
@@ -195,7 +195,7 @@ class AbaDetalheAtividades extends AbaDetalheBase {
     }
 
     getTituloAba() { return "Atividades"; }
-    
+
     setDados(dadosProfundos) {
         this._dados = dadosProfundos;
         this.render();
@@ -203,21 +203,21 @@ class AbaDetalheAtividades extends AbaDetalheBase {
 
     render() {
         this._root.innerHTML = '';
-        
+
         if (!this._dados.atividadesTecnicas || this._dados.atividadesTecnicas.length === 0) {
             this._root.appendChild(this._uiFacade.createEmptyState(null, "Nenhuma atividade técnica registrada.").getNode());
             return;
         }
 
         const containerNode = document.createElement('div');
-        
+
         this._dados.atividadesTecnicas.forEach((grupo, idx) => {
             if (grupo && grupo.itens && Array.isArray(grupo.itens)) {
                 const titleNode = document.createElement('div');
                 titleNode.style.cssText = `font-weight: bold; color: var(--th-text); margin-bottom: 4px; ${idx > 0 ? 'margin-top: 12px;' : ''}`;
                 titleNode.innerText = grupo.topico;
                 containerNode.appendChild(titleNode);
-                
+
                 const listNode = this._uiFacade.createList(null, grupo.itens.map(i => i.descricao));
                 containerNode.appendChild(listNode.getNode());
             } else if (typeof grupo === 'string') {
@@ -285,15 +285,15 @@ class AbaDetalheResponsaveis extends AbaDetalheBase {
         profHeader.innerHTML = `<div style="font-weight: bold; color: var(--th-text); font-size: 13px;">Profissional Responsável</div>`;
         const btnEnvProfAnchor = document.createElement('div');
         profHeader.appendChild(btnEnvProfAnchor);
-        const btnEnvProf = this._uiFacade.createIconButton(btnEnvProfAnchor, '👤', () => this._inserirNovoEnvolvido("Profissional", { 
-            nome: this._dados.responsavel.nome, cpfCnpj: this._utilsCore.text.apenasNumeros(this._dados.responsavel.registro) 
+        const btnEnvProf = this._uiFacade.createIconButton(btnEnvProfAnchor, '👤', () => this._inserirNovoEnvolvido("Profissional", {
+            nome: this._dados.responsavel.nome, cpfCnpj: this._utilsCore.text.apenasNumeros(this._dados.responsavel.registro)
         }), 'Adicionar Profissional como Envolvido', true);
         btnEnvProf.mount();
         this._root.appendChild(profHeader);
 
         this._root.appendChild(this._uiFacade.createKeyValue(null, "Nome", this._dados.responsavel.nome || "N/A").getNode());
         this._root.appendChild(this._uiFacade.createKeyValue(null, "Título", this._dados.responsavel.titulo || "N/A").getNode());
-        
+
         const regProfLimpo = this._utilsCore.text.apenasNumeros(this._dados.responsavel.registro || "");
         const cpProf = this._uiFacade.createCopyableText(null, this._dados.responsavel.registro || "N/A");
         this._root.appendChild(this._uiFacade.createKeyValue(null, "Registro", cpProf).getNode());
@@ -301,12 +301,12 @@ class AbaDetalheResponsaveis extends AbaDetalheBase {
         const empHeader = document.createElement('div');
         empHeader.style.cssText = 'display: flex; justify-content: flex-start; align-items: center; margin-bottom: 4px; margin-top: 10px; gap: 8px;';
         empHeader.innerHTML = `<div style="font-weight: bold; color: var(--th-text); font-size: 13px;">Empresa Contratada</div>`;
-        
+
         if (this._dados.responsavel.empresaContratada && this._dados.responsavel.empresaContratada.nome) {
             const btnEnvEmpAnchor = document.createElement('div');
             empHeader.appendChild(btnEnvEmpAnchor);
-            const btnEnvEmp = this._uiFacade.createIconButton(btnEnvEmpAnchor, '🏢', () => this._inserirNovoEnvolvido("Empresa", { 
-                nome: this._dados.responsavel.empresaContratada.nome, cpfCnpj: this._utilsCore.text.apenasNumeros(this._dados.responsavel.empresaContratada.registro) 
+            const btnEnvEmp = this._uiFacade.createIconButton(btnEnvEmpAnchor, '🏢', () => this._inserirNovoEnvolvido("Empresa", {
+                nome: this._dados.responsavel.empresaContratada.nome, cpfCnpj: this._utilsCore.text.apenasNumeros(this._dados.responsavel.empresaContratada.registro)
             }), 'Adicionar Empresa como Envolvida', true);
             btnEnvEmp.mount();
         }
@@ -314,7 +314,7 @@ class AbaDetalheResponsaveis extends AbaDetalheBase {
 
         if (this._dados.responsavel.empresaContratada && this._dados.responsavel.empresaContratada.nome) {
             this._root.appendChild(this._uiFacade.createKeyValue(null, "Nome", this._dados.responsavel.empresaContratada.nome).getNode());
-            
+
             const regEmpLimpo = this._utilsCore.text.apenasNumeros(this._dados.responsavel.empresaContratada.registro || "");
             const cpEmp = this._uiFacade.createCopyableText(null, this._dados.responsavel.empresaContratada.registro || "N/A", regEmpLimpo);
             this._root.appendChild(this._uiFacade.createKeyValue(null, "Registro", cpEmp).getNode());
@@ -355,7 +355,7 @@ class AbaDetalheOutros extends AbaDetalheBase {
 
     render() {
         this._root.innerHTML = '';
-        
+
         const propHeader = document.createElement('div');
         propHeader.style.cssText = 'display: flex; justify-content: flex-start; align-items: center; margin-bottom: 4px; gap: 8px;';
         propHeader.innerHTML = `<div style="font-weight: bold; color: var(--th-text); font-size: 13px;">Proprietário da Obra</div>`;
@@ -371,7 +371,7 @@ class AbaDetalheOutros extends AbaDetalheBase {
         const docLimpo = this._dados.obra.documentoLimpo;
         const cpDoc = docLimpo ? this._uiFacade.createCopyableText(null, this._dados.obra.documento, docLimpo) : "N/A";
         this._root.appendChild(this._uiFacade.createKeyValue(null, "Doc", cpDoc).getNode());
-        
+
         this._root.appendChild(this._uiFacade.createKeyValue(null, "Finalidade", this._dados.obra.finalidade || "N/A").getNode());
 
         const cepDisplay = this._dados.contrato.cep || (this._dados.obra.endereco && this._dados.obra.endereco.cep) || "N/A";
@@ -382,7 +382,7 @@ class AbaDetalheOutros extends AbaDetalheBase {
         const contrHeader = document.createElement('div');
         contrHeader.innerHTML = `<div style="font-weight: bold; color: var(--th-text); font-size: 13px; margin-top: 10px;">Contratante</div>`;
         this._root.appendChild(contrHeader);
-        
+
         this._root.appendChild(this._uiFacade.createKeyValue(null, "Nome", this._dados.contrato.contratante || "N/A").getNode());
         const docContrLimpo = this._utilsCore.text.apenasNumeros(this._dados.contrato.documento || "");
         const cpContrDoc = docContrLimpo ? this._uiFacade.createCopyableText(null, this._dados.contrato.documento, docContrLimpo) : "N/A";
@@ -439,10 +439,10 @@ class CardResultado {
         this._uiFacade = dependencias.uiFacade;
         this._commBridge = dependencias.commBridge;
         this._creaHelper = dependencias.creaHelper;
-        
+
         this._detalhesAbertos = false;
-        this._cardElement = null; 
-        
+        this._cardElement = null;
+
         this._abasDetalhes = []; // Array de instâncias AbaDetalheBase (injetadas via composition)
         this._abasJaCarregadas = false;
     }
@@ -453,7 +453,7 @@ class CardResultado {
 
     render() {
         const rootContent = document.createElement('div');
-        
+
         // 1. Label Proprietário/Contratante
         const propLabel = this._dadosART.contratanteName ? "Contratante" : "Proprietário";
         const propValue = this._dadosART.contratanteName || this._dadosART.owner || "N/A";
@@ -469,7 +469,7 @@ class CardResultado {
             docNode.className = 'card-doc-placeholder';
             docNode.innerText = '⏳...';
         }
-        
+
         const kvDoc = this._uiFacade.createKeyValue(null, "Doc", docNode);
         const kvData = this._uiFacade.createKeyValue(null, "Data", this._dadosART.dataRegistro || "N/A");
         const rowDados = this._uiFacade.createFlexRow(null, [kvDoc, kvData]);
@@ -480,7 +480,7 @@ class CardResultado {
         rowDiv.style.cssText = "margin-top: 8px; border-top: 1px solid rgba(128,128,128,0.25); display: flex; justify-content: space-between; align-items: flex-end; padding-top: 8px; gap: 8px;";
         rowDiv.innerHTML = `<div style="font-size: 13px; color: var(--th-text-light); line-height: 1.4; flex: 1;">📍 ${this._dadosART.address || "N/A"}</div>`;
         rootContent.appendChild(rowDiv);
-        
+
         const btnAnchor = document.createElement('div');
         rowDiv.appendChild(btnAnchor);
         const btnDetalhesObj = this._uiFacade.createIconButton(btnAnchor, 'ℹ', () => this._handleToggleDetalhes(btnDetalhesObj), 'Ver Detalhes');
@@ -496,13 +496,13 @@ class CardResultado {
         // --- Montagem do Card ---
         const cardObj = this._uiFacade.createCard(null, { title: this._dadosART.artNum, content: rootContent, variant: 'success', closeButton: true });
         this._cardElement = cardObj.getNode();
-        
+
         // 5. Ajustes de Cabeçalho (Link, Download, Badge)
         const header = this._cardElement.querySelector('.pts-card-header');
         const titleSpan = this._cardElement.querySelector('.pts-card-title');
         if (header && titleSpan) {
             titleSpan.innerHTML = `<a href="${this._dadosART.url}" target="_blank" class="pts-link art-link-title">${this._dadosART.artNum}</a>`;
-            
+
             const btnDownload = this._uiFacade.createIconButton(null, '📥', async () => {
                 try {
                     btnDownload.getNode().innerHTML = ' ⏳';
@@ -528,11 +528,11 @@ class CardResultado {
                     }, 3000);
                 }
             }, "Baixar PDF da ART");
-            
+
             btnDownload.getNode().classList.add('pts-btn-inline');
-            
+
             const badge = this._uiFacade.createBadge(null, "COMPATÍVEL", "success", "ghost");
-            
+
             // Agrupa Título, Botão e Badge para o flexbox 'space-between' empurrar apenas o botão de fechar para a direita
             const titleGroup = document.createElement('div');
             titleGroup.style.cssText = 'display: flex; align-items: center; gap: 8px;';
@@ -549,7 +549,7 @@ class CardResultado {
         this._detalhesAbertos = !this._detalhesAbertos;
         const container = this._cardElement.querySelector('.card-detalhes-ancora');
         container.style.display = this._detalhesAbertos ? 'block' : 'none';
-        
+
         if (this._btnDetalhesObj) {
             this._btnDetalhesObj.setIcon(this._detalhesAbertos ? '▲' : 'ℹ');
         }
@@ -564,7 +564,7 @@ class CardResultado {
                     const html = await this._commBridge.apiART.fetchText(this._dadosART.url);
                     dadosProfundos = this._creaHelper.parser.parseDetalhe(html);
                 }
-                
+
                 if (!this._dadosART.docFormatado) {
                     const docStr = dadosProfundos.contrato.documento || dadosProfundos.obra.documento;
                     const docLimpo = dadosProfundos.contrato.documentoLimpo || dadosProfundos.obra.documentoLimpo;
@@ -578,16 +578,16 @@ class CardResultado {
                         }
                     }
                 }
-                
+
                 // Distribui os dados para as abas instanciadas e as renderiza
                 this._abasDetalhes.forEach(aba => aba.setDados(dadosProfundos));
-                
+
                 const containerDetalhesDOM = this._cardElement.querySelector('.card-detalhes-ancora');
-                
+
                 const itensAba = this._abasDetalhes.map((aba, index) => {
                     const node = aba.getNode();
                     node.style.display = index === 0 ? 'block' : 'none'; // A primeira nasce aberta
-                    
+
                     return {
                         label: aba.getTituloAba(),
                         active: index === 0,
@@ -600,10 +600,10 @@ class CardResultado {
 
                 const tabsNode = this._uiFacade.createTabs(null, itensAba).getNode();
                 containerDetalhesDOM.appendChild(tabsNode);
-                
+
                 // Injeta as views logo abaixo do controlador visual das abas
                 this._abasDetalhes.forEach(aba => containerDetalhesDOM.appendChild(aba.getNode()));
-                
+
                 this._abasJaCarregadas = true;
             } catch (err) {
                 console.error(err);
@@ -624,9 +624,9 @@ class PainelBuscaControle {
     constructor(app, uiFacade) {
         this._app = app;
         this._uiFacade = uiFacade;
-        this._painelBusca = null; 
-        this._conteinerResultados = null; 
-        this._resultados = []; 
+        this._painelBusca = null;
+        this._conteinerResultados = null;
+        this._resultados = [];
     }
 
     construirPainel(listaModos) {
@@ -642,7 +642,7 @@ class PainelBuscaControle {
 
         this._painelBusca = new ConteinerFormulariosBusca(this._uiFacade, callbacks);
         listaModos.forEach(modo => this._painelBusca.addModo(modo));
-        
+
         this._conteinerResultados = this._painelBusca.render();
     }
 
@@ -656,9 +656,9 @@ class PainelBuscaControle {
             }
         } else {
             const el = document.getElementById('caca-art-painel');
-            if (el) { 
+            if (el) {
                 if (el.style.display === 'none') {
-                    el.style.display = 'flex'; el.style.opacity = '1'; 
+                    el.style.display = 'flex'; el.style.opacity = '1';
                 } else {
                     el.style.display = 'none';
                 }
@@ -672,13 +672,13 @@ class PainelBuscaControle {
 
     atualizarStatusBusca(msg, tipo) {
         if (!this._conteinerResultados) return;
-        
+
         this._conteinerResultados.querySelectorAll('.pts-status-box').forEach(el => el.remove());
-        
+
         const msgFinal = tipo === 'loading' ? `⏳ ${msg}` : msg;
         const variantFinal = tipo === 'loading' ? 'loading' : tipo;
         const statusBoxObj = this._uiFacade.createStatusBox(this._conteinerResultados, msgFinal, variantFinal);
-        
+
         // Uso Seguro e Nativo do DOM sem depender de métodos sujos como 'afterbegin' pro mount OOP
         this._conteinerResultados.insertBefore(statusBoxObj.getNode(), this._conteinerResultados.firstChild);
 
@@ -698,5 +698,130 @@ class PainelBuscaControle {
     limparResultados() {
         this._resultados = [];
         if (this._conteinerResultados) this._conteinerResultados.innerHTML = '';
+    }
+}
+
+/**
+ * @class CnaeCardResultado
+ * @description Card especializado para exibir informações de Empresa (BrasilAPI + CREA).
+ */
+class CnaeCardResultado {
+    constructor(dados, dependencias) {
+        this._dados = dados;
+        this._uiFacade = dependencias.uiFacade;
+    }
+
+    render() {
+        const root = document.createElement('div');
+
+        // Função auxiliar para formatar CNPJ (xx.xxx.xxx/xxxx-xx)
+        const formatarCnpj = (val) => {
+            const d = val.replace(/\D/g, '');
+            return d.length === 14 ? d.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5") : val;
+        };
+
+        // Cabeçalho com Razão Social (Fonte clara/branca)
+        const title = document.createElement('div');
+        title.style.cssText = 'font-weight: bold; color: var(--th-text-bright); font-size: 14px; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px;';
+        title.innerText = `🏢 ${this._dados.razaoSocial || 'Empresa não encontrada'}`;
+        root.appendChild(title);
+
+        // Grid de informações básicas em uma única linha (Flex Row)
+        const cnpjFormatado = formatarCnpj(this._dados.cnpj);
+        const cpCnpj = this._uiFacade.createCopyableText(null, cnpjFormatado, this._dados.cnpj);
+        const kvCnpj = this._uiFacade.createKeyValue(null, "CNPJ", cpCnpj);
+
+        let kvRegistro, kvStatus;
+
+        if (this._dados.crea) {
+            const situacao = this._dados.crea.situacao || "";
+            const isAtiva = situacao.toUpperCase().includes('ATIVA') || situacao.toUpperCase().includes('ATIVO');
+            const statusColor = isAtiva ? 'success' : 'warning';
+
+            const badgeCrea = this._uiFacade.createBadge(null, situacao, statusColor, "ghost");
+            kvStatus = this._uiFacade.createKeyValue(null, "Status", badgeCrea);
+
+            const regValue = this._dados.crea.registro || "N/A";
+            kvRegistro = this._uiFacade.createKeyValue(null, "Registro", regValue);
+        } else {
+            // Se não tem registro, exibe N/A em vermelho
+            const naSpan = document.createElement('span');
+            naSpan.style.color = 'var(--th-error)';
+            naSpan.style.fontWeight = 'bold';
+            naSpan.innerText = 'N/A';
+
+            kvRegistro = this._uiFacade.createKeyValue(null, "Registro", naSpan);
+            kvStatus = this._uiFacade.createKeyValue(null, "Status", this._uiFacade.createBadge(null, "N/A", "error", "ghost"));
+        }
+
+        // Monta a linha única
+        const infoRow = this._uiFacade.createFlexRow(null, [kvCnpj, kvRegistro, kvStatus], "flex-start");
+        const rowNode = infoRow.getNode();
+        rowNode.style.gap = "12px";
+        rowNode.style.marginBottom = "12px";
+        rowNode.style.alignItems = "center";
+
+        // Aplica a proporção 3/2/1 diretamente nas colunas geradas pela UIFactory
+        const cols = rowNode.querySelectorAll('.pts-col');
+        if (cols.length >= 3) {
+            cols[0].style.flex = '3'; // CNPJ (Mais largo)
+            cols[1].style.flex = '2'; // Registro
+            cols[2].style.flex = '2'; // Status (Mais estreito)
+
+            // Garante que o conteúdo não force a quebra da proporção
+            cols.forEach(c => {
+                c.style.minWidth = '0';
+                c.style.overflow = 'hidden';
+            });
+        }
+
+        root.appendChild(rowNode);
+
+        // Seção de CNAEs (Sem códigos, apenas descrições)
+        const cnaeSection = document.createElement('div');
+        cnaeSection.style.cssText = 'background: rgba(128,128,128,0.05); padding: 8px; border-radius: 6px;';
+
+        const principalTitle = document.createElement('div');
+        principalTitle.style.cssText = 'font-weight: bold; font-size: 11px; color: var(--th-text-light); text-transform: uppercase; margin-bottom: 4px;';
+        principalTitle.innerText = "CNAE Principal";
+        cnaeSection.appendChild(principalTitle);
+
+        const principalDesc = document.createElement('div');
+        principalDesc.style.cssText = 'font-size: 13px; margin-bottom: 10px; color: var(--th-text);';
+        principalDesc.innerText = this._dados.cnaes.principal.desc; // Apenas descrição
+        cnaeSection.appendChild(principalDesc);
+
+        if (this._dados.cnaes.secundarios.length > 0) {
+            const secundarioTitle = document.createElement('div');
+            secundarioTitle.style.cssText = 'font-weight: bold; font-size: 11px; color: var(--th-text-light); text-transform: uppercase; margin-bottom: 4px;';
+            secundarioTitle.innerText = "CNAEs Secundários";
+            cnaeSection.appendChild(secundarioTitle);
+
+            const scrollArea = this._uiFacade.createScrollableArea(null, "", "120px");
+            const listNode = document.createElement('div');
+            listNode.style.cssText = 'display: flex; flex-direction: column; gap: 6px;';
+
+            this._dados.cnaes.secundarios.forEach(c => {
+                const item = document.createElement('div');
+                item.style.cssText = 'font-size: 12px; line-height: 1.2; color: var(--th-text-light);';
+                item.innerText = c.descricao; // Apenas descrição
+                listNode.appendChild(item);
+            });
+
+            scrollArea.getNode().appendChild(listNode);
+            cnaeSection.appendChild(scrollArea.getNode());
+        }
+
+        root.appendChild(cnaeSection);
+
+        // Montagem final no Card
+        const cardObj = this._uiFacade.createCard(null, {
+            title: "Dados Empresariais",
+            content: root,
+            variant: 'info',
+            closeButton: true
+        });
+
+        return cardObj.getNode();
     }
 }

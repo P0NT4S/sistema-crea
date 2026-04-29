@@ -27,7 +27,7 @@ class BuscaARTUIFactory {
     montarPainelDeBusca(appController, dadosContextuais) {
         const painelUI = new PainelBuscaControle(appController, this._uiFacade);
         
-        const formEnd = new FormularioBusca(this._uiFacade, 'address', '📍 Por Endereço', (ctx, inputs, ui) => {
+        const formEnd = new FormularioBusca(this._uiFacade, 'address', '📍 Endereço', (ctx, inputs, ui) => {
             inputs.logradouro = ui.createInput(ctx, "Logradouro", "", "text", dadosContextuais.logradouro);
             inputs.logradouro.mount();
 
@@ -40,7 +40,33 @@ class BuscaARTUIFactory {
             ui.createFlexRow(ctx, [inputs.numeros, inputs.pagina]).mount();
         });
 
-        const formCont = new FormularioBusca(this._uiFacade, 'contract', '📄 Por Contrato', (ctx, inputs, ui) => {
+        const formProf = new FormularioBusca(this._uiFacade, 'professional', '👤 Profissional', (ctx, inputs, ui) => {
+            inputs.campo = ui.createSelect(ctx, "Buscar por", [
+                { label: "Registro", value: "registro" },
+                { label: "CPF/CNPJ", value: "cpf_cnpj" },
+                { label: "Nome", value: "nome" }
+            ], "registro");
+            inputs.campo.mount();
+
+            inputs.valor = ui.createInput(ctx, "Valor da busca", "Ex: 12345DDF", "text", "");
+            inputs.valor.mount();
+
+            inputs.enderecoOpcional = ui.createInput(null, "Filtro de Endereço Opcional", 'Ex: lote, 35', "text", "");
+            inputs.pagina = ui.createInput(null, "Pág. Inicial", "", "number", "1");
+            ui.createFlexRow(ctx, [inputs.enderecoOpcional, inputs.pagina]).mount();
+        });
+
+        const formNum = new FormularioBusca(this._uiFacade, 'direct', '🔢 Número ART', (ctx, inputs, ui) => {
+            inputs.numeroArt = ui.createInput(ctx, "Número da ART", "Ex: 0720250007491", "text", "");
+            inputs.numeroArt.mount();
+        });
+
+        const formCnae = new FormularioBusca(this._uiFacade, 'cnae', '🏢 CNAE/CREA', (ctx, inputs, ui) => {
+            inputs.cnpj = ui.createInput(ctx, "CNPJ da Empresa", "Ex: 00.000.000/0001-00", "text", "");
+            inputs.cnpj.mount();
+        });
+
+        const formCont = new FormularioBusca(this._uiFacade, 'contract', '📄 Contrato', (ctx, inputs, ui) => {
             inputs.cnpj = ui.createInput(ctx, "CNPJ do Contratante", "Ex: 00.000.000/0001-00", "text", "");
             inputs.cnpj.mount();
             
@@ -50,7 +76,7 @@ class BuscaARTUIFactory {
             ui.createFlexRow(ctx, [inputs.contrato, inputs.pagina]).mount();
         });
 
-        const formDoc = new FormularioBusca(this._uiFacade, 'document', '👤 Por CPF/CNPJ', (ctx, inputs, ui) => {
+        const formDoc = new FormularioBusca(this._uiFacade, 'document', '🆔 Doc. Prop.', (ctx, inputs, ui) => {
             inputs.docCpfCnpj = ui.createInput(ctx, "CPF ou CNPJ", "Ex: 000.000.000-00", "text", "");
             inputs.docCpfCnpj.mount();
             
@@ -60,31 +86,44 @@ class BuscaARTUIFactory {
             ui.createFlexRow(ctx, [inputs.enderecoOpcional, inputs.pagina]).mount();
         });
 
-        painelUI.construirPainel([formEnd, formCont, formDoc]);
+        painelUI.construirPainel([formEnd, formProf, formNum, formCnae, formCont, formDoc]);
         return painelUI;
     }
 
     /**
      * Instancia um CardResultado individual e adiciona as abas abstratas.
-     * @param {Object} dadosART - DTO extraído da Strategy do Motor.
-     * @returns {CardResultado}
+     * @param {Object} dados - DTO extraído da Strategy do Motor.
+     * @returns {CardResultado|Object}
      */
-    fabricarCardResultado(dadosART) {
-        // O Card precisa do CommBridge para dar Lazy-Fetch nos detalhes profundos,
-        // do parser para extrair, e da uiFacade. Repassamos tudo centralizado.
+    fabricarCardResultado(dados) {
+        // Suporte para Cards Especiais (CNAE ou Ações Diretas)
+        if (dados.isCnaeCard) {
+            return new CnaeCardResultado(dados, { uiFacade: this._uiFacade });
+        }
+        
+        if (dados.isAction) {
+            return {
+                render: () => {
+                    const el = document.createElement('div');
+                    el.style.cssText = 'padding: 10px; margin-bottom: 10px; border-radius: 8px; background: rgba(var(--th-success-rgb), 0.1); border: 1px solid var(--th-success); color: var(--th-success); font-size: 13px; font-weight: bold;';
+                    el.innerText = `✅ ${dados.message}`;
+                    return el;
+                }
+            };
+        }
+
         const dependenciasParaOCard = {
             uiFacade: this._uiFacade,
             commBridge: this._commBridge,
             creaHelper: this._creaHelper
         };
 
-        const card = new CardResultado(dadosART, dependenciasParaOCard);
+        const card = new CardResultado(dados, dependenciasParaOCard);
         
-        // Factory agindo de verdade: Constrói a Composição do Componente injetando Abas!
         card.addAbaDetalhe(new AbaDetalheAtividades(this._uiFacade));
         card.addAbaDetalhe(new AbaDetalheObservacoes(this._uiFacade));
         card.addAbaDetalhe(new AbaDetalheResponsaveis(this._uiFacade, this._creaHelper.rmo, this._utilsCore));
-        card.addAbaDetalhe(new AbaDetalheOutros(this._uiFacade, this._creaHelper.rmo, dadosART, this._utilsCore));
+        card.addAbaDetalhe(new AbaDetalheOutros(this._uiFacade, this._creaHelper.rmo, dados, this._utilsCore));
         
         return card;
     }

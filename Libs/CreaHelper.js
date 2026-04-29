@@ -653,6 +653,43 @@ class RmoInterceptor {
 }
 
 /**
+ * @class CorpPortal
+ * @description Manipula o portal corporativo do CREA-DF para extrair links de ARTs.
+ */
+class CorpPortal {
+    /**
+     * @param {CoreUtils} coreUtils - Instância do núcleo genérico.
+     */
+    constructor(coreUtils) {
+        this.core = coreUtils;
+    }
+
+    /**
+     * Varre o HTML do portal corporativo buscando o link da ART.
+     * @param {string} html - HTML da página do portal corporativo.
+     * @returns {string|null} Link absoluto para a página de ART ou null se não encontrado.
+     */
+    extrairLinkArt(html) {
+        try {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const link = doc.querySelector('a[href*="art.creadf.org.br/art1025/publico/consultas_ret.php"]');
+            
+            if (link) {
+                // Remove escapes (ex: \/) caso existam no HTML bruto
+                return link.getAttribute('href').replace(/\\/g, '');
+            }
+            
+            this.core.log.warning("CorpPortal", "Link de ART não encontrado na página corporativa.");
+            return null;
+        } catch (e) {
+            this.core.log.error("CorpPortal", "Erro ao extrair link de ART do portal corporativo.", e);
+            return null;
+        }
+    }
+}
+
+/**
  * @class CreaHelper
  * @description Facade (Fachada) do Domínio do CREA.
  * Fornece o ponto de entrada principal para os scripts finais, ocultando 
@@ -671,5 +708,6 @@ class CreaHelper {
         // Instancia os submódulos passando o core (para que eles tenham log/texto)
         this.parser = new ArtParser(coreUtils);
         this.rmo = new RmoInterceptor(coreUtils);
+        this.corp = new CorpPortal(coreUtils);
     }
 }

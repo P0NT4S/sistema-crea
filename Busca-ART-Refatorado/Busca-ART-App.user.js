@@ -70,7 +70,7 @@
 
         isInitialized = true;
         appUtils.log.success("Status", "Injeção de Bibliotecas POO concluída.");
-        appCommBridge.definirModoTeste(true);
+        appCommBridge.definirModoTeste(false);
 
         if (ThemeManager) ThemeManager.init(); // Vem da Lib UIFactory
 

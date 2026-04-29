@@ -282,3 +282,192 @@ class FiltroPorDocumento extends FiltroGeralBase {
         return { metadados: extraido.metadados, matches };
     }
 }
+
+/**
+ * @class FiltroPorProfissional
+ * @description Estratégia que intermedeia o Portal Corporativo para chegar na lista de ARTs.
+ */
+class FiltroPorProfissional extends FiltroGeralBase {
+    constructor(input, dependencias) {
+        super();
+        this._CommBridge = dependencias.CommBridge;
+        this._Utils = dependencias.Utils;
+
+        this.campo = input.campo; // 'registro', 'cpf_cnpj', 'nome'
+        this.valor = input.valor;
+        this.regexEnderecos = this._Utils.text.buildHybridRegex(input.enderecoOpcional || "");
+        
+        // Cache da URL final de ARTs após a primeira descoberta
+        this._urlArtListBase = null;
+    }
+
+    /**
+     * Sobrescreve o motor de URL para suportar o salto entre domínios (Mobile -> ART).
+     */
+    async getOverrideUrl(paginaIndex) {
+        if (!this._urlArtListBase) {
+            // Passo A: Requisição Inicial (API Corporativa)
+            const jsonCorp = await this._CommBridge.apiART.buscarCorporativo(this.campo, this.valor);
+            if (!jsonCorp.resultados || jsonCorp.resultados.length === 0) {
+                throw new Error("Nenhum profissional ou empresa localizado com estes dados.");
+            }
+
+            // Passo B: Extração do Link (Pega o primeiro hit)
+            const linkCorp = jsonCorp.resultados[0].corpLink.replace(/\\/g, '');
+
+            // Passo C: Raspagem em Background
+            const htmlCorp = await this._CommBridge.apiART.fetchText(linkCorp);
+            const linkArt = this._Utils.crea.corp.extrairLinkArt(htmlCorp);
+            if (!linkArt) throw new Error("Acesso à página de ARTs não disponível no portal corporativo deste registro.");
+
+            this._urlArtListBase = linkArt;
+        }
+
+        // Passo D: Continuação com a URL base extraída + paginação
+        const urlObj = new URL(this._urlArtListBase);
+        urlObj.searchParams.set('pg', (paginaIndex - 1).toString());
+        return urlObj.href;
+    }
+
+    construirQueryParams(paginaIndex) {
+        return new URLSearchParams(); // Não usado devido ao override
+    }
+
+    async processarPagina(htmlDaPagina, rmoIdAtual, estadoAtual) {
+        // Reutiliza a lógica de processamento por endereço, já que o usuário quer o filtro opcional
+        const extraido = this._Utils.crea.parser.parseLista(htmlDaPagina);
+        const matches = [];
+
+        for (let i = 0; i < extraido.arts.length; i++) {
+            if (estadoAtual && estadoAtual.isCancelado) break;
+
+            const art = extraido.arts[i];
+            // Se não houver regex (filtro vazio), checkAll retorna true por padrão na Lib
+            if (this._Utils.text.checkAll(art.endereco, this.regexEnderecos)) {
+                try {
+                    const detailHtml = await this._CommBridge.apiART.fetchText(art.urlImpressao);
+                    const detalhes = this._Utils.crea.parser.parseDetalhe(detailHtml);
+                    matches.push({
+                        id: Date.now() + i,
+                        url: rmoIdAtual ? `${art.urlImpressao}&rmo_id=${rmoIdAtual}` : art.urlImpressao,
+                        artNum: art.numeroART,
+                        owner: art.proprietario,
+                        address: this._Utils.text.applyHighlight(art.endereco, this.regexEnderecos, 'pts-highlight pts-highlight--success'),
+                        dataRegistro: art.dataRegistro,
+                        docFormatado: detalhes.contrato.documento || detalhes.obra.documento,
+                        docLimpo: detalhes.contrato.documentoLimpo || detalhes.obra.documentoLimpo,
+                        cacheDetalhes: detalhes
+                    });
+                } catch (e) {
+                    matches.push({
+                        id: Date.now() + i,
+                        url: rmoIdAtual ? `${art.urlImpressao}&rmo_id=${rmoIdAtual}` : art.urlImpressao,
+                        artNum: art.numeroART,
+                        owner: art.proprietario,
+                        address: this._Utils.text.applyHighlight(art.endereco, this.regexEnderecos, 'pts-highlight pts-highlight--success'),
+                        dataRegistro: art.dataRegistro
+                    });
+                }
+            }
+        }
+        return { metadados: extraido.metadados, matches };
+    }
+}
+
+/**
+ * @class FiltroPorNumeroART
+ * @description Estratégia de "Ação Direta" para abrir uma ART específica.
+ */
+class FiltroPorNumeroART extends IFiltroBusca {
+    constructor(input, dependencias) {
+        super();
+        this._CommBridge = dependencias.CommBridge;
+        this.numeroArt = input.numeroArt.trim();
+        if (this.numeroArt.length < 10) throw new Error("Número de ART inválido.");
+    }
+
+    async getOverrideUrl() { return 'skip'; }
+
+    construirQueryParams() { return new URLSearchParams(); }
+
+    async processarPagina() {
+        const url = 'https://art.creadf.org.br/art1025/funcoes/form_impressao_tos.php';
+        
+        // Para que a página abra "como uma aba real" e não apenas como texto, 
+        // usamos a técnica de submissão de formulário oculto com target _blank.
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = url;
+        form.target = '_blank';
+        form.style.display = 'none';
+
+        const campos = {
+            'rnp_ficha_intranet': '1',
+            'NUMERO_DA_ART': this.numeroArt,
+            'envia': 'Consultar ART'
+        };
+
+        for (const nome in campos) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = nome;
+            input.value = campos[nome];
+            form.appendChild(input);
+        }
+
+        document.body.appendChild(form);
+        form.submit();
+        
+        // Limpeza do DOM após o disparo
+        setTimeout(() => { if (form.parentNode) form.parentNode.removeChild(form); }, 500);
+
+        return { 
+            metadados: { totalPaginas: 1, totalOcorrencias: 1, artsNaPagina: 1 }, 
+            matches: [{ id: 'direct', isAction: true, message: `Solicitação de abertura da ART ${this.numeroArt} enviada ao navegador.` }] 
+        };
+    }
+}
+
+/**
+ * @class ConsultaEmpresaCnae
+ * @description Estratégia para consulta híbrida de Registro CREA + CNAEs.
+ */
+class ConsultaEmpresaCnae extends IFiltroBusca {
+    constructor(input, dependencias) {
+        super();
+        this._CommBridge = dependencias.CommBridge;
+        this._Utils = dependencias.Utils;
+        this.cnpj = this._Utils.text.apenasNumeros(input.cnpj);
+        if (this.cnpj.length !== 14) throw new Error("CNPJ deve ter 14 dígitos.");
+    }
+
+    async getOverrideUrl() { return 'skip'; }
+
+    construirQueryParams() { return new URLSearchParams(); }
+
+    async processarPagina() {
+        // Execução paralela das consultas
+        const [dataCrea, dataCnae] = await Promise.all([
+            this._CommBridge.apiART.buscarCorporativo('cpf_cnpj', this.cnpj),
+            this._CommBridge.apiPublica.consultarCnpj(this.cnpj)
+        ]);
+
+        const registroCrea = dataCrea.resultados && dataCrea.resultados.length > 0 ? dataCrea.resultados[0] : null;
+
+        return {
+            metadados: { totalPaginas: 1, totalOcorrencias: 1, artsNaPagina: 1 },
+            matches: [{
+                id: 'cnae-result',
+                isCnaeCard: true,
+                cnpj: this.cnpj,
+                razaoSocial: dataCnae.razao_social,
+                nomeFantasia: dataCnae.nome_fantasia,
+                crea: registroCrea ? { registro: registroCrea.registro, situacao: registroCrea.situacao } : null,
+                cnaes: {
+                    principal: { cod: dataCnae.cnae_fiscal, desc: dataCnae.cnae_fiscal_descricao },
+                    secundarios: dataCnae.cnaes_secundarios || []
+                }
+            }]
+        };
+    }
+}

@@ -558,6 +558,42 @@ class List extends DataDisplayBase {
     }
 }
 
+class Select extends FormBase {
+    constructor(core, parent, label, options = [], initialValue = "") {
+        super(core, parent, 'pts-group', initialValue);
+        this.label = label;
+        this.options = options; // Array de { label, value }
+
+        this.render();
+    }
+
+    render() {
+        const optionsHtml = this.options.map(opt => 
+            `<option value="${opt.value}" ${opt.value === this.value ? 'selected' : ''}>${opt.label}</option>`
+        ).join('');
+
+        this.el.innerHTML = `
+            <label class="pts-label">${this.label}</label>
+            <select class="pts-input">${optionsHtml}</select>
+        `;
+
+        const selectNode = this.el.querySelector('select');
+        selectNode.addEventListener('change', (e) => {
+            this.value = e.target.value;
+        });
+
+        this._syncUI();
+    }
+
+    _syncUI() {
+        const selectNode = this.el.querySelector('select');
+        if (selectNode) {
+            selectNode.value = this.value;
+            selectNode.disabled = this.isDisabled;
+        }
+    }
+}
+
 class Input extends FormBase {
     constructor(core, parent, label, placeholder = "", type = "text", initialValue = "") {
         super(core, parent, 'pts-group', initialValue);
@@ -742,6 +778,7 @@ class UIFacade {
     createKeyValue(parent, labelOrObj, value) { return new KeyValue(this.core, parent, labelOrObj, value); }
     createList(parent, items, isOrdered) { return new List(this.core, parent, items, isOrdered); }
     createInput(parent, label, placeholder, type, initVal) { return new Input(this.core, parent, label, placeholder, type, initVal); }
+    createSelect(parent, label, options, initVal) { return new Select(this.core, parent, label, options, initVal); }
     createDivider(parent, title, style) { return new Divider(this.core, parent, title, style); }
     createTabs(parent, items) { return new Tabs(this.core, parent, items); }
     createFlexRow(parent, columns, gap) { return new FlexRow(this.core, parent, columns, gap); }

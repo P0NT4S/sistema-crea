@@ -36,16 +36,27 @@ class VarredorDeArtsService {
                 const pag = estado.paginaAtual;
                 this.onStatusMudou('loading', `Analisando página ${pag}...`);
 
-                // 1. Delegar a montagem dos parâmetros HTTP para a Estratégia
-                const paramsStr = estrategia.construirQueryParams(pag).toString();
-                const url = `${this._commBridge.urlBaseArt}?${paramsStr}`; // URL base via CommBridge injetado
+                // 1. Delegar a montagem da URL para a Estratégia (com suporte a override para saltos de domínio)
+                let url = "";
+                if (typeof estrategia.getOverrideUrl === 'function') {
+                    url = await estrategia.getOverrideUrl(pag);
+                } else {
+                    const paramsStr = estrategia.construirQueryParams(pag).toString();
+                    url = `${this._commBridge.urlBaseArt}?${paramsStr}`;
+                }
                 
-                // 2. Fetch Primário
-                const response = await this._commBridge.apiART.fetchAsync(url);
-                if (estado.isCancelado) break; // Verificação rigorosa contra travamentos de UX
+                let htmlParaProcessar = "";
 
-                // 3. Processamento Dinâmico (Aqui a estratégia faz a varredura simples ou mergulhos profundos)
-                const resultado = await estrategia.processarPagina(response.responseText, rmoIdAtual, estado);
+                // 2. Fetch Primário (Pula se a estratégia retornar 'skip')
+                if (url !== 'skip') {
+                    const response = await this._commBridge.apiART.fetchAsync(url);
+                    htmlParaProcessar = response.responseText;
+                }
+
+                if (estado.isCancelado) break; 
+
+                // 3. Processamento Dinâmico
+                const resultado = await estrategia.processarPagina(htmlParaProcessar, rmoIdAtual, estado);
                 if (estado.isCancelado) break;
 
                 // 4. Sincronizar o Conhecimento Físico da CREA à nossa Paginação
