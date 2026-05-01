@@ -97,7 +97,7 @@ class ConteinerFormulariosBusca {
         `;
 
         this.panelInstance = this._uiFacade.createPanel({
-            id: 'caca-art-painel', title: `${this._uiFacade.icons.get('SEARCH')} Buscar ARTs`, width: "550px", draggable: true, persist: true, closeButton: true,
+            id: 'caca-art-painel', title: `${this._uiFacade.icons.get('CRYSTAL_BALL', { size: '40px' })} Oráculo`, width: "550px", draggable: true, persist: true, closeButton: true,
             content: panelBodyWrapper
         });
 
@@ -508,13 +508,14 @@ class CardResultado {
                     btnDownload.setIcon(this._uiFacade.icons.loading({ size: '16px' }));
                     btnDownload.getNode().style.pointerEvents = 'none';
 
-                    const rmoIdExtraido = this._creaHelper.rmo.getDadosRmo('geral')?.id;
-                    if (!rmoIdExtraido) {
-                        this._uiFacade.error("Erro: Não foi possível identificar o ID da RMO nesta tela para o download.");
-                        throw new Error("ID da RMO não encontrado.");
+                    const dadosGerais = await this._creaHelper.rmo.getDadosRmo('geral');
+                    const rmoNumeroExtraido = dadosGerais?.numero;
+                    if (!rmoNumeroExtraido) {
+                        this._uiFacade.error("Erro: Não foi possível identificar o Número da RMO nesta tela para o download.");
+                        throw new Error("Número da RMO não encontrado.");
                     }
 
-                    await this._commBridge.apiLocal.baixarPdfArt(rmoIdExtraido, this._dadosART.artNum, this._dadosART.url);
+                    await this._commBridge.apiLocal.baixarPdfArt(rmoNumeroExtraido, this._dadosART.artNum, this._dadosART.url);
 
                     this._uiFacade.success(`Download da ART ${this._dadosART.artNum} finalizado!`);
                     btnDownload.setIcon(this._uiFacade.icons.get('CHECK_CIRCLE_FILL', { color: 'var(--th-success)' }));
@@ -551,7 +552,7 @@ class CardResultado {
         container.style.display = this._detalhesAbertos ? 'block' : 'none';
 
         if (this._btnDetalhesObj) {
-            this._btnDetalhesObj.setIcon(this._detalhesAbertos ? this._uiFacade.icons.get('CARET_UP_FILL', { color: 'var(--th-primary)' }) : this._uiFacade.icons.get('INFO_CIRCLE', { color: 'var(--th-info)' }));
+            this._btnDetalhesObj.setIcon(this._detalhesAbertos ? this._uiFacade.icons.get('CARET_UP_FILL', { color: 'var(--th-info)' }) : this._uiFacade.icons.get('INFO_CIRCLE', { color: 'var(--th-info)' }));
         }
     }
 
@@ -674,6 +675,7 @@ class PainelBuscaControle {
         if (!this._conteinerResultados) return;
 
         this._conteinerResultados.querySelectorAll('.pts-status-box').forEach(el => el.remove());
+        if (!msg) return;
 
         let msgFinal = msg;
         if (tipo === 'loading') msgFinal = `${this._uiFacade.icons.loading()} ${msg}`;

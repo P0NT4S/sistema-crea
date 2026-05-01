@@ -423,7 +423,7 @@ class FiltroPorNumeroART extends IFiltroBusca {
 
         return { 
             metadados: { totalPaginas: 1, totalOcorrencias: 1, artsNaPagina: 1 }, 
-            matches: [{ id: 'direct', isAction: true, message: `Solicitação de abertura da ART ${this.numeroArt} enviada ao navegador.` }] 
+            matches: [{ id: 'direct', isAction: true, message: `ART ${this.numeroArt} aberta no navegador.` }] 
         };
     }
 }

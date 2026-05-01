@@ -132,6 +132,7 @@ class IconSet {
         CLOUD_UPLOAD: `<path fill-rule="evenodd" d="M4.406 1.342A5.53 5.53 0 0 1 8 0c2.69 0 4.923 2 5.166 4.579C14.758 4.804 16 6.137 16 7.773 16 9.569 14.502 11 12.687 11H10a.5.5 0 0 1 0-1h2.688C13.979 10 15 8.988 15 7.773c0-1.216-1.02-2.228-2.313-2.228h-.5v-.5C12.188 2.825 10.328 1 8 1a4.53 4.53 0 0 0-2.941 1.1c-.757.652-1.153 1.438-1.153 2.055v.448l-.445.049C2.064 4.805 1 5.952 1 7.318 1 8.785 2.23 10 3.781 10H6a.5.5 0 0 1 0 1H3.781C1.708 11 0 9.366 0 7.318c0-1.763 1.266-3.223 2.942-3.593.143-.863.698-1.723 1.464-2.383"/>  <path fill-rule="evenodd" d="M7.646 4.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 5.707V14.5a.5.5 0 0 1-1 0V5.707L5.354 7.854a.5.5 0 1 1-.708-.708z"/>`,
         CLOUD_UPLOAD_FILL: `<path fill-rule="evenodd" d="M8 0a5.53 5.53 0 0 0-3.594 1.342c-.766.66-1.321 1.52-1.464 2.383C1.266 4.095 0 5.555 0 7.318 0 9.366 1.708 11 3.781 11H7.5V5.707L5.354 7.854a.5.5 0 1 1-.708-.708l3-3a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 5.707V11h4.188C14.502 11 16 9.57 16 7.773c0-1.636-1.242-2.969-2.834-3.194C12.923 1.999 10.69 0 8 0m-.5 14.5V11h1v3.5a.5.5 0 0 1-1 0"/>`,
         COPY: `<path fill-rule="evenodd" d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z"/>`,
+        CRYSTAL_BALL: `<g transform="scale(0.16)" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"> <g> <line x1="50" y1="6" x2="50" y2="1" transform="rotate(-110 50 48)" /> <line x1="50" y1="6" x2="50" y2="1" transform="rotate(-82.5 50 48)" /> <line x1="50" y1="6" x2="50" y2="1" transform="rotate(-55 50 48)" /> <line x1="50" y1="6" x2="50" y2="1" transform="rotate(-27.5 50 48)" /> <line x1="50" y1="6" x2="50" y2="1" transform="rotate(0 50 48)" /> <line x1="50" y1="6" x2="50" y2="1" transform="rotate(27.5 50 48)" /> <line x1="50" y1="6" x2="50" y2="1" transform="rotate(55 50 48)" /> <line x1="50" y1="6" x2="50" y2="1" transform="rotate(82.5 50 48)" /> <line x1="50" y1="6" x2="50" y2="1" transform="rotate(110 50 48)" /> </g> <path d="M 68.6 74 A 32 32 0 0 0 76.2 29.7" /> <path d="M 70.6 23.5 A 32 32 0 1 0 31.4 74" /> <path d="M 28.0 40.0 A 24 24 0 0 1 38.0 27.5" /> <path d="M 42.0 25.0 A 24 24 0 0 1 48.0 23.5" /> <path d="M 26 74 L 74 74" /> <path d="M 26 74 C 18 74 18 83 26 83 L 42 83 L 50 75 L 58 83 L 74 83 C 82 83 82 74 74 74" /> <path d="M 74 83 C 86 83 86 93 74 93 L 36 93" /> <path d="M 26 83 C 14 83 14 93 26 93 L 30 93" /> <path d="M 58 83 L 50 91 L 42 83" /> </g>`,
         FILTER_CIRCLE: `<path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>  <path d="M7 11.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 0 1h-1a.5.5 0 0 1-.5-.5m-2-3a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5m-2-3a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5"/>`,
         FILTER_CIRCLE_FILL: `<path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16M3.5 5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1 0-1M5 8.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5m2 3a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 0 1h-1a.5.5 0 0 1-.5-.5"/>`,
         FILE_EARMARK_BINARY: `<path d="M7.05 11.885c0 1.415-.548 2.206-1.524 2.206C4.548 14.09 4 13.3 4 11.885c0-1.412.548-2.203 1.526-2.203.976 0 1.524.79 1.524 2.203m-1.524-1.612c-.542 0-.832.563-.832 1.612q0 .133.006.252l1.559-1.143c-.126-.474-.375-.72-.733-.72zm-.732 2.508c.126.472.372.718.732.718.54 0 .83-.563.83-1.614q0-.129-.006-.25zm6.061.624V14h-3v-.595h1.181V10.5h-.05l-1.136.747v-.688l1.19-.786h.69v3.633z"/>  <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2M9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5z"/>`,
@@ -794,7 +795,7 @@ class Select extends FormBase {
 
         this.el.innerHTML = `
             <label class="pts-label">${this.label}</label>
-            <select class="pts-input">${optionsHtml}</select>
+            <select class="pts-input pts-select">${optionsHtml}</select>
         `;
 
         const selectNode = this.el.querySelector('select');
@@ -825,16 +826,39 @@ class Input extends FormBase {
     }
 
     render() {
+        const isNumber = this.type === 'number';
+        
         this.el.innerHTML = `
             <label class="pts-label">${this.label}</label>
-            <input type="${this.type}" class="pts-input" placeholder="${this.placeholder}" value="${this.value}">
+            <div class="${isNumber ? 'pts-number-container' : ''}">
+                <input type="${this.type}" class="pts-input" placeholder="${this.placeholder}" value="${this.value}">
+                ${isNumber ? `
+                    <div class="pts-number-controls">
+                        <button class="pts-number-btn btn-up" type="button">▲</button>
+                        <button class="pts-number-btn btn-down" type="button">▼</button>
+                    </div>
+                ` : ''}
+            </div>
         `;
 
-        // Atrela o binding bi-direcional
         const inputNode = this.el.querySelector('input');
         inputNode.addEventListener('input', (e) => {
             this.value = e.target.value;
         });
+
+        if (isNumber) {
+            const btnUp = this.el.querySelector('.btn-up');
+            const btnDown = this.el.querySelector('.btn-down');
+            
+            btnUp.onclick = () => {
+                inputNode.stepUp();
+                inputNode.dispatchEvent(new Event('input'));
+            };
+            btnDown.onclick = () => {
+                inputNode.stepDown();
+                inputNode.dispatchEvent(new Event('input'));
+            };
+        }
 
         this._syncUI();
     }

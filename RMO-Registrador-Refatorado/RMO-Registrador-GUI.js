@@ -57,7 +57,7 @@ class PainelRegistroRmo {
      */
     construir(modelo) {
         // Ícone usa currentColor para herdar a cor do texto do contexto onde está inserido
-        const iconeRegistro = IconSet.get('FLOPPY', { color: 'currentColor', fill: true, size: '16px' });
+        const iconeRegistro = IconSet.get('FLOPPY', { color: 'currentColor', size: '16px' });
         this._numeroRmo = modelo.idRmo;
 
         // Gera as <option> do select a partir do Domain (fonte da verdade dos status)

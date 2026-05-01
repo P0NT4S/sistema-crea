@@ -36,7 +36,7 @@ class BuscaARTUIFactory {
             inputs.bairro = ui.createInput(ctx, "Bairro", "", "text", dadosContextuais.bairro);
             inputs.bairro.mount();
             
-            inputs.numeros = ui.createInput(null, "Filtros Opcionais (CSV)", 'Ex: 10, conj, "lote a"', "text", dadosContextuais.numeros);
+            inputs.numeros = ui.createInput(null, "Filtros de Endereço", "Ex: 10, conj, ''lote a''", "text", dadosContextuais.numeros);
             inputs.pagina = ui.createInput(null, "Pág. Inicial", "", "number", "1");
             
             ui.createFlexRow(ctx, [inputs.numeros, inputs.pagina]).mount();
@@ -56,7 +56,7 @@ class BuscaARTUIFactory {
             inputs.docCpfCnpj = ui.createInput(ctx, "CPF ou CNPJ do Proprietário", "Ex: 000.000.000-00", "text", "");
             inputs.docCpfCnpj.mount();
             
-            inputs.enderecoOpcional = ui.createInput(null, "Filtro de Endereço (Opcional)", 'Ex: 10, conj, "lote a"', "text", "");
+            inputs.enderecoOpcional = ui.createInput(null, "Filtro de Endereço", "Ex: 10, conj, ''lote a''", "text", "");
             inputs.pagina = ui.createInput(null, "Pág. Inicial", "", "number", "1");
             
             ui.createFlexRow(ctx, [inputs.enderecoOpcional, inputs.pagina]).mount();
@@ -80,10 +80,10 @@ class BuscaARTUIFactory {
             ], "registro");
             inputs.campo.mount();
 
-            inputs.valor = ui.createInput(ctx, "Valor da busca", "Ex: 12345DDF", "text", "");
+            inputs.valor = ui.createInput(ctx, "Valor da busca", "Ex: 12345/D-DF", "text", "");
             inputs.valor.mount();
 
-            inputs.enderecoOpcional = ui.createInput(null, "Filtro de Endereço (Opcional)", 'Ex: lote, 35', "text", "");
+            inputs.enderecoOpcional = ui.createInput(null, "Filtro de Endereço", "Ex: 10, conj, ''lote a''", "text", "");
             inputs.pagina = ui.createInput(null, "Pág. Inicial", "", "number", "1");
             ui.createFlexRow(ctx, [inputs.enderecoOpcional, inputs.pagina]).mount();
         });
@@ -107,8 +107,8 @@ class BuscaARTUIFactory {
             return {
                 render: () => {
                     const el = document.createElement('div');
-                    el.style.cssText = 'padding: 10px; margin-bottom: 10px; border-radius: 8px; background: rgba(var(--th-success-rgb), 0.1); border: 1px solid var(--th-success); color: var(--th-success); font-size: 13px; font-weight: bold;';
-                    el.innerText = `✅ ${dados.message}`;
+                    el.style.cssText = 'padding: 10px; margin-bottom: 10px; border-radius: 8px; background: rgba(var(--th-success-rgb), 0.1); border: 1px solid var(--th-success); color: var(--th-success); font-size: 13px; font-weight: bold; display: flex; align-items: center; gap: 8px;';
+                    el.innerHTML = `${this._uiFacade.icons.get('CHECK_CIRCLE_FILL', { color: 'var(--th-success)' })} ${dados.message}`;
                     return el;
                 }
             };

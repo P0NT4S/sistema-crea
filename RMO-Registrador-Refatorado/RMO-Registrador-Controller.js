@@ -147,7 +147,7 @@ class RmoRegistradorController {
      * @private
      */
     _montarFab() {
-        const iconeFab = IconSet.get('FLOPPY', { color: '#fff', fill: true, size: '20px' });
+        const iconeFab = IconSet.get('FLOPPY', { color: '#fff', size: '20px' });
 
         const fab = new FabButton(this._ui.core, iconeFab, () => {
             if (!this._painelUI.foiConstruido) {

@@ -2,5 +2,4 @@
 # Pastas excluídas do versionamento
 # ============================================================
 
-# Código-fonte Angular/Ionic do app do CREA (referência de leitura, não pertence ao repo)
-Scripts-do-CREA/
+Refs/ 

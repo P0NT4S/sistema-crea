@@ -222,6 +222,64 @@
     font-family: var(--th-font);
 }
 
+/* Estilização para Selects (Dropdowns) */
+.pts-input.pts-select {
+    cursor: pointer;
+}
+
+.pts-input.pts-select option {
+    background-color: var(--th-bg-dark);
+    color: var(--th-text);
+    padding: 12px;
+}
+
+.pts-input::-webkit-outer-spin-button,
+.pts-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.pts-input[type="number"] {
+    padding-right: 36px;
+}
+
+/* Controles Numéricos Customizados */
+.pts-number-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.pts-number-controls {
+    position: absolute;
+    right: 5px;
+    display: flex;
+    flex-direction: column;
+    height: calc(100% - 10px);
+    gap: 2px;
+}
+
+.pts-number-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--th-bg-light);
+    color: var(--th-text-light);
+    width: 24px;
+    flex: 1;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.pts-number-btn:hover {
+    color: var(--th-text-muted);
+}
+
+.pts-number-btn:active {
+    transform: scale(0.75);
+}
+
 /* ==========================================================================
    6. BOTÕES (.pts-btn)
    ========================================================================== */

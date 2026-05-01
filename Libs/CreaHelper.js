@@ -546,25 +546,54 @@ class RmoInterceptor {
     }
 
     /**
-     * Lê todo o formulário atual da RMO invisível.
+     * Lê todo o formulário atual da RMO.
+     * Realiza até 10 tentativas com intervalo de 1 segundo para aguardar o Angular popular o state,
+     * garantindo que os dados estejam disponíveis após navegações SPA.
+     * 
      * @param {string} [abaNome=null] - Se informado, retorna apenas a aba requisitada (ex: 'endereco').
-     * @returns {Object|null} Clone seguro e estruturado dos dados preenchidos.
+     * @param {number} [maxTentativas=10] - Limite de tentativas de leitura.
+     * @returns {Promise<Object|null>} Clone seguro e estruturado dos dados preenchidos ou null se falhar.
      */
-    getDadosRmo(abaNome = null) {
-        const inst = this.conectar();
-        if (!inst) return null;
+    async getDadosRmo(abaNome = null, maxTentativas = 10) {
+        const INTERVALO_MS = 1000;
 
-        const formGroup = inst.form || inst.rmoService.form;
-        try {
-            // Pega o valor nativo do FormGroup legível e serializa para limpar dependências
-            const dadosPlanos = JSON.parse(JSON.stringify(formGroup.getRawValue()));
-            const dadosEstruturados = this._estruturarDados(dadosPlanos);
-            
-            return abaNome && dadosEstruturados[abaNome] ? dadosEstruturados[abaNome] : dadosEstruturados;
-        } catch (err) {
-            this.core.log.error("RmoInterceptor", `Erro ao formatar dados da RMO: ${err.message}`);
-            return null;
+        for (let tentativa = 1; tentativa <= maxTentativas; tentativa++) {
+            const inst = this.conectar();
+            if (inst) {
+                const formGroup = inst.form || (inst.rmoService && inst.rmoService.form);
+                if (formGroup) {
+                    try {
+                        const rawValue = formGroup.getRawValue();
+                        if (rawValue) {
+                            const dadosPlanos = JSON.parse(JSON.stringify(rawValue));
+                            const dadosEstruturados = this._estruturarDados(dadosPlanos);
+                            
+                            // Validação mínima: Verifica se a aba geral possui Número ou ID populado (prioridade ao Número)
+                            const dadosGerais = dadosEstruturados.geral;
+                            if (dadosGerais && (dadosGerais.numero || dadosGerais.id)) {
+                                if (tentativa > 1) {
+                                    this.core.log.success("RmoInterceptor", `Dados da RMO obtidos com sucesso via Angular (tentativa ${tentativa}/${maxTentativas}).`);
+                                }
+                                return abaNome && dadosEstruturados[abaNome] ? dadosEstruturados[abaNome] : dadosEstruturados;
+                            }
+                        }
+                    } catch (err) {
+                        this.core.log.warning("RmoInterceptor", `Tentativa ${tentativa}/${maxTentativas} falhou ao ler form: ${err.message}`);
+                    }
+                }
+            }
+
+            // Aguarda antes da próxima tentativa
+            if (tentativa < maxTentativas) {
+                await new Promise(resolve => setTimeout(resolve, INTERVALO_MS));
+            } else if (!this.conectar()) {
+                // Se não há Angular e não achou na URL, não adianta tentar 10x
+                break;
+            }
         }
+
+        this.core.log.warning("RmoInterceptor", `Não foi possível obter dados da RMO após ${maxTentativas} tentativas (Angular ausente ou timeout).`);
+        return null;
     }
 
     /**

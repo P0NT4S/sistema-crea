@@ -29,14 +29,14 @@ class BuscaARTController {
     }
 
     inicializar() {
-        const _fab = this._UI.createFab(this._UI.icons.get('SEARCH'), () => {
+        const _fab = this._UI.createFab(this._UI.icons.get('SEARCH'), async () => {
             if (!this._painelUI) {
-                const autoData = this._extrairDadosContextuaisCasoExistaRmoAberto();
+                const autoData = await this._extrairDadosContextuaisCasoExistaRmoAberto();
                 this._painelUI = this._uiFactory.montarPainelDeBusca(this, autoData);
             } else {
                 this._painelUI.toggle();
             }
-        }, "Alternar Caça ART");
+        }, "Alternar Oráculo");
         
         _fab.mount();
     }
@@ -66,7 +66,7 @@ class BuscaARTController {
             this._estadoAtualBusca = new EstadoPaginacao(pagInicial, PICS_LIMITE);
 
             // C. Injetar a estratégia e o limite no motor e acelerar!
-            const rmoAtiva = this._extrairRmoAtiva();
+            const rmoAtiva = await this._extrairRmoAtiva();
             await this._motorServico.iniciarAssincrono(this._estrategiaAtual, this._estadoAtualBusca, rmoAtiva);
 
         } catch (erroRegraDeNegocio) {
@@ -143,23 +143,23 @@ class BuscaARTController {
         btn.className = 'pts-btn pts-btn--ghost';
         btn.style.marginTop = "10px";
         btn.style.width = "100%";
-        btn.innerHTML = `🔄 Continuar (Próxima Pág: ${estadoPaginacaoAtual.paginaAtual}${totalStr})`;
+        btn.innerHTML = `${this._UI.icons.get('REPEAT', { color: 'var(--th-info)' })} Continuar (Próxima Pág: ${estadoPaginacaoAtual.paginaAtual}${totalStr})`;
 
-        btn.onclick = () => {
+        btn.onclick = async () => {
             btn.remove();
             this._painelUI.bloquearInputs(true);
             // Re-acelera o motor injetando o exato momento pausado anteriormente!
             this._estadoAtualBusca.paginaLimite = (this._estadoAtualBusca.paginaAtual + 5) - 1; // Expande limite pra mais ciclo
-            this._motorServico.iniciarAssincrono(this._estrategiaAtual, this._estadoAtualBusca, this._extrairRmoAtiva());
+            this._motorServico.iniciarAssincrono(this._estrategiaAtual, this._estadoAtualBusca, await this._extrairRmoAtiva());
         };
         
         c.appendChild(btn);
     }
 
-    _extrairRmoAtiva() {
+    async _extrairRmoAtiva() {
         // Tenta buscar no Angular State Engine primariamente
-        const dadosGerais = this._creaHelper.rmo.getDadosRmo('geral');
-        if (dadosGerais && dadosGerais.id) return String(dadosGerais.id);
+        const dadosGerais = await this._creaHelper.rmo.getDadosRmo('geral');
+        if (dadosGerais && dadosGerais.numero) return String(dadosGerais.numero);
         
         // Fallback: Tenta ler o state do Angular pelo Hash Router (Ionic navigation)
         try {
@@ -170,8 +170,10 @@ class BuscaARTController {
         return "";
     }
 
-    _extrairDadosContextuaisCasoExistaRmoAberto() {
-        const endData = this._creaHelper.rmo.getDadosRmo('endereco');
+    async _extrairDadosContextuaisCasoExistaRmoAberto() {
+        // O getDadosRmo agora possui retry interno de 10s via CreaHelper
+        const endData = await this._creaHelper.rmo.getDadosRmo('endereco');
+        
         if (endData && endData.endereco) {
             const strNums = `${endData.endereco} ${endData.numeroEnd || ''} ${endData.complemento || ''}`;
             const nums = strNums.match(/\d+/g);

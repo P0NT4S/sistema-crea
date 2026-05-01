@@ -35,36 +35,22 @@ class RmoRegistradorService {
     // ========================================================================
 
     /**
-     * Tenta extrair o número da RMO aguardando o Angular popular o state da página.
-     * Realiza até 10 tentativas com intervalo de 1 segundo cada, cobrindo o tempo de
-     * hidratação do componente Angular/Ionic após uma navegação SPA.
+     * Extrai o número da RMO do contexto da página.
+     * A classe RmoInterceptor já gerencia o tempo de hidratação do Angular através
+     * de retries internos.
      *
      * @param {CreaHelper} creaHelper - Instância já inicializada do CreaHelper.
-     * @returns {Promise<string|null>} O número da RMO ou null se não localizado após o timeout.
+     * @returns {Promise<string|null>} O número da RMO ou null se não localizado.
      */
     async extrairIdRmoDaPagina(creaHelper) {
-        const MAX_TENTATIVAS = 10;
-        const INTERVALO_MS   = 1000;
-
-        for (let tentativa = 1; tentativa <= MAX_TENTATIVAS; tentativa++) {
-            try {
-                const dadosGerais = creaHelper.rmo.getDadosRmo('geral');
-                if (dadosGerais && dadosGerais.numero) {
-                    const numeroStr = String(dadosGerais.numero);
-                    this._log.success('RmoService', `Número extraído via Angular State (tentativa ${tentativa}/${MAX_TENTATIVAS}): ${numeroStr}`);
-                    return numeroStr;
-                }
-            } catch (e) {
-                this._log.warning('RmoService', `Tentativa ${tentativa}/${MAX_TENTATIVAS} falhou.`, e);
-            }
-
-            // Angular ainda não populou o state — aguarda antes da próxima tentativa
-            if (tentativa < MAX_TENTATIVAS) {
-                await new Promise(resolve => setTimeout(resolve, INTERVALO_MS));
-            }
+        const dadosGerais = await creaHelper.rmo.getDadosRmo('geral');
+        
+        if (dadosGerais && dadosGerais.numero) {
+            const numeroStr = String(dadosGerais.numero);
+            this._log.success('RmoService', `Número extraído via Angular State: ${numeroStr}`);
+            return numeroStr;
         }
 
-        this._log.warning('RmoService', `Número da RMO não encontrado após ${MAX_TENTATIVAS} tentativas.`);
         return null;
     }
 

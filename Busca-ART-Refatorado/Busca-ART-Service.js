@@ -70,12 +70,12 @@ class VarredorDeArtsService {
 
                 // 5. Reportar Hits Válidos e Pausar para Respiro da Tela
                 if (resultado.matches.length > 0) {
-                    this.onStatusMudou('success', `✅ ${resultado.matches.length} ARTs validadas na pág ${pag}!`);
+                    this.onStatusMudou('success', `${resultado.matches.length} ARTs validadas na pág ${pag}!`);
                     this.onResultadosEncontrados(resultado.matches);
 
                     // Pausa automática após achar hits e repassa controle
                     if (pag >= estado.totalPaginas) {
-                        this.onFimDaBusca(`Busca finalizada! Varridas de 100% das páginas (${estado.totalPaginas}).`);
+                        this.onFimDaBusca(``);
                     } else {
                         estado.avancar(); // Pula pra próxima na contagem da memória (resume future state)
                         this.onPausadoParaContinuar(estado);
