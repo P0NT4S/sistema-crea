@@ -29,7 +29,7 @@ class BuscaARTController {
     }
 
     inicializar() {
-        const _fab = this._UI.createFab('🔍', () => {
+        const _fab = this._UI.createFab(this._UI.icons.get('SEARCH'), () => {
             if (!this._painelUI) {
                 const autoData = this._extrairDadosContextuaisCasoExistaRmoAberto();
                 this._painelUI = this._uiFactory.montarPainelDeBusca(this, autoData);

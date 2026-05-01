@@ -136,13 +136,12 @@ class CreaAPI {
                 url: url,
                 headers: { ...headersPadrao, ...headers },
                 onload: r => {
-                    if (r.status >= 200 && r.status < 400) {
+                    if (r.status >= 200 && r.status < 300) {
                         resolve(r);
                     } else {
-                        if (r.status === 403) {
-                            this.bridge.log.error("CreaAPI", "Erro 403: Acesso negado. Verifique se você está logado no portal corporativo.");
-                        }
-                        reject(new Error(`HTTP ${r.status}`));
+                        const error = new Error(`HTTP ${r.status}`);
+                        error.response = r; // Anexa a resposta para análise posterior (ex: parse do body de erro)
+                        reject(error);
                     }
                 },
                 onerror: (e) => reject(new Error("Falha na conexão de rede.")),
@@ -337,6 +336,16 @@ class PublicAPI {
             const res = await this.bridge.apiART.fetchAsync(url);
             return JSON.parse(res.responseText);
         } catch (e) {
+            // Tenta extrair a mensagem de erro estruturada da BrasilAPI (400, 404, etc)
+            if (e.response && e.response.responseText) {
+                try {
+                    const errorData = JSON.parse(e.response.responseText);
+                    this.bridge.log.warning("PublicAPI", `BrasilAPI: ${errorData.message || errorData.type}`);
+                    return { error: true, ...errorData };
+                } catch (parseErr) {
+                    // Se não for JSON, segue para o erro genérico
+                }
+            }
             this.bridge.log.error("PublicAPI", `Falha ao consultar CNPJ ${cnpj}`, e);
             throw e;
         }

@@ -90,14 +90,14 @@ class ConteinerFormulariosBusca {
             <div id="forms-container"></div>
             <div id="divider-anchor"></div>
             <div class="my-row" style="margin-top: 10px; display: flex; gap: 15px;">
-                <button id="art-btn-search" class="pts-btn pts-btn--primary" style="flex: 1;">🔍 Pesquisar</button>
-                <button id="art-btn-cancel" class="pts-btn pts-btn--error" style="display:none; flex: 1; background-color: var(--th-error); border-color: var(--th-error); color: white;">⛔ Parar Busca</button>
+                <button id="art-btn-search" class="pts-btn pts-btn--primary" style="flex: 1; gap: 8px;">${this._uiFacade.icons.get('SEARCH')} Pesquisar</button>
+                <button id="art-btn-cancel" class="pts-btn pts-btn--error" style="display:none; flex: 1; background-color: var(--th-error); border-color: var(--th-error); color: white; gap: 8px;">${this._uiFacade.icons.get('BAN')} Parar Busca</button>
             </div>
             <div id="art-results-container" style="margin-top: 20px;"></div>
         `;
 
         this.panelInstance = this._uiFacade.createPanel({
-            id: 'caca-art-painel', title: "🕵️ Buscar ARTs", width: "550px", draggable: true, persist: true, closeButton: true,
+            id: 'caca-art-painel', title: `${this._uiFacade.icons.get('SEARCH')} Buscar ARTs`, width: "550px", draggable: true, persist: true, closeButton: true,
             content: panelBodyWrapper
         });
 
@@ -139,7 +139,7 @@ class ConteinerFormulariosBusca {
             onClick: () => this._alternarModo(form.getModoID())
         }));
 
-        const tabsObj = this._uiFacade.createTabs(null, itensAba);
+        const tabsObj = this._uiFacade.createTabs(null, itensAba, true); // Ativa modo carrossel
         this._tabsNode = tabsObj.getNode();
 
         const panelBody = this.panelInstance.getNode().querySelector('.pts-panel-body') || this.panelInstance.getNode();
@@ -285,7 +285,7 @@ class AbaDetalheResponsaveis extends AbaDetalheBase {
         profHeader.innerHTML = `<div style="font-weight: bold; color: var(--th-text); font-size: 13px;">Profissional Responsável</div>`;
         const btnEnvProfAnchor = document.createElement('div');
         profHeader.appendChild(btnEnvProfAnchor);
-        const btnEnvProf = this._uiFacade.createIconButton(btnEnvProfAnchor, '👤', () => this._inserirNovoEnvolvido("Profissional", {
+        const btnEnvProf = this._uiFacade.createIconButton(btnEnvProfAnchor, this._uiFacade.icons.get('PERSON_FILL_ADD', { color: 'var(--th-primary)' }), () => this._inserirNovoEnvolvido("Profissional", {
             nome: this._dados.responsavel.nome, cpfCnpj: this._utilsCore.text.apenasNumeros(this._dados.responsavel.registro)
         }), 'Adicionar Profissional como Envolvido', true);
         btnEnvProf.mount();
@@ -305,7 +305,7 @@ class AbaDetalheResponsaveis extends AbaDetalheBase {
         if (this._dados.responsavel.empresaContratada && this._dados.responsavel.empresaContratada.nome) {
             const btnEnvEmpAnchor = document.createElement('div');
             empHeader.appendChild(btnEnvEmpAnchor);
-            const btnEnvEmp = this._uiFacade.createIconButton(btnEnvEmpAnchor, '🏢', () => this._inserirNovoEnvolvido("Empresa", {
+            const btnEnvEmp = this._uiFacade.createIconButton(btnEnvEmpAnchor, this._uiFacade.icons.get('BUILDING_ADD', { color: 'var(--th-primary)' }), () => this._inserirNovoEnvolvido("Empresa", {
                 nome: this._dados.responsavel.empresaContratada.nome, cpfCnpj: this._utilsCore.text.apenasNumeros(this._dados.responsavel.empresaContratada.registro)
             }), 'Adicionar Empresa como Envolvida', true);
             btnEnvEmp.mount();
@@ -361,7 +361,7 @@ class AbaDetalheOutros extends AbaDetalheBase {
         propHeader.innerHTML = `<div style="font-weight: bold; color: var(--th-text); font-size: 13px;">Proprietário da Obra</div>`;
         const btnFillAnchor = document.createElement('div');
         propHeader.appendChild(btnFillAnchor);
-        const btnFillProp = this._uiFacade.createIconButton(btnFillAnchor, '📌', () => this._injetarDadosProprietario(), 'Preencher dados na RMO', true);
+        const btnFillProp = this._uiFacade.createIconButton(btnFillAnchor, this._uiFacade.icons.get('PIN_ANGLE_FILL', { color: 'var(--th-primary)' }), () => this._injetarDadosProprietario(), 'Preencher dados na RMO', true);
         btnFillProp.mount();
         this._root.appendChild(propHeader);
 
@@ -467,7 +467,7 @@ class CardResultado {
         } else {
             docNode = document.createElement('span');
             docNode.className = 'card-doc-placeholder';
-            docNode.innerText = '⏳...';
+            docNode.innerHTML = this._uiFacade.icons.loading({ size: '14px' });
         }
 
         const kvDoc = this._uiFacade.createKeyValue(null, "Doc", docNode);
@@ -478,12 +478,12 @@ class CardResultado {
         // 3. Endereço e Botão de Detalhes
         const rowDiv = document.createElement('div');
         rowDiv.style.cssText = "margin-top: 8px; border-top: 1px solid rgba(128,128,128,0.25); display: flex; justify-content: space-between; align-items: flex-end; padding-top: 8px; gap: 8px;";
-        rowDiv.innerHTML = `<div style="font-size: 13px; color: var(--th-text-light); line-height: 1.4; flex: 1;">📍 ${this._dadosART.address || "N/A"}</div>`;
+        rowDiv.innerHTML = `<div style="font-size: 13px; color: var(--th-text-light); line-height: 1.4; flex: 1; display: flex; align-items: center; gap: 6px;">${this._uiFacade.icons.get('SIGNPOST_FILL', { color: 'var(--th-success)' })} ${this._dadosART.address || "N/A"}</div>`;
         rootContent.appendChild(rowDiv);
 
         const btnAnchor = document.createElement('div');
         rowDiv.appendChild(btnAnchor);
-        const btnDetalhesObj = this._uiFacade.createIconButton(btnAnchor, 'ℹ', () => this._handleToggleDetalhes(btnDetalhesObj), 'Ver Detalhes');
+        const btnDetalhesObj = this._uiFacade.createIconButton(btnAnchor, this._uiFacade.icons.get('INFO_CIRCLE', { color: 'var(--th-info)' }), () => this._handleToggleDetalhes(btnDetalhesObj), 'Ver Detalhes');
         this._btnDetalhesObj = btnDetalhesObj;
         btnDetalhesObj.mount();
 
@@ -503,9 +503,9 @@ class CardResultado {
         if (header && titleSpan) {
             titleSpan.innerHTML = `<a href="${this._dadosART.url}" target="_blank" class="pts-link art-link-title">${this._dadosART.artNum}</a>`;
 
-            const btnDownload = this._uiFacade.createIconButton(null, '📥', async () => {
+            const btnDownload = this._uiFacade.createIconButton(null, this._uiFacade.icons.get('DOWNLOAD', { color: 'var(--th-info)' }), async () => {
                 try {
-                    btnDownload.getNode().innerHTML = ' ⏳';
+                    btnDownload.setIcon(this._uiFacade.icons.loading({ size: '16px' }));
                     btnDownload.getNode().style.pointerEvents = 'none';
 
                     const rmoIdExtraido = this._creaHelper.rmo.getDadosRmo('geral')?.id;
@@ -517,13 +517,13 @@ class CardResultado {
                     await this._commBridge.apiLocal.baixarPdfArt(rmoIdExtraido, this._dadosART.artNum, this._dadosART.url);
 
                     this._uiFacade.success(`Download da ART ${this._dadosART.artNum} finalizado!`);
-                    btnDownload.getNode().innerHTML = ' ✅';
+                    btnDownload.setIcon(this._uiFacade.icons.get('CHECK_CIRCLE_FILL', { color: 'var(--th-success)' }));
                     btnDownload.getNode().title = "ART Baixada";
                 } catch (e) {
-                    btnDownload.getNode().innerHTML = ' ❌';
+                    btnDownload.setIcon(this._uiFacade.icons.get('X_CIRCLE_FILL', { color: 'var(--th-error)' }));
                     if (e.message !== "ID da RMO não encontrado.") this._uiFacade.error(`Falha ao baixar ART ${this._dadosART.artNum}.`);
                     setTimeout(() => {
-                        btnDownload.getNode().innerHTML = ' 📥';
+                        btnDownload.setIcon(this._uiFacade.icons.get('DOWNLOAD', { color: 'var(--th-info)' }));
                         btnDownload.getNode().style.pointerEvents = 'auto';
                     }, 3000);
                 }
@@ -551,13 +551,13 @@ class CardResultado {
         container.style.display = this._detalhesAbertos ? 'block' : 'none';
 
         if (this._btnDetalhesObj) {
-            this._btnDetalhesObj.setIcon(this._detalhesAbertos ? '▲' : 'ℹ');
+            this._btnDetalhesObj.setIcon(this._detalhesAbertos ? this._uiFacade.icons.get('CARET_UP_FILL', { color: 'var(--th-primary)' }) : this._uiFacade.icons.get('INFO_CIRCLE', { color: 'var(--th-info)' }));
         }
     }
 
     async _handleToggleDetalhes(botaoObjFacade) {
         if (!this._abasJaCarregadas) {
-            botaoObjFacade.setIcon('⏳');
+            botaoObjFacade.setIcon(this._uiFacade.icons.loading({ size: '16px' }));
             try {
                 let dadosProfundos = this._dadosART.cacheDetalhes;
                 if (!dadosProfundos) {
@@ -607,7 +607,7 @@ class CardResultado {
                 this._abasJaCarregadas = true;
             } catch (err) {
                 console.error(err);
-                botaoObjFacade.setIcon('❌');
+                botaoObjFacade.setIcon(this._uiFacade.icons.get('X_CIRCLE_FILL', { color: 'var(--th-error)' }));
                 this._uiFacade.toast("Falha ao baixar detalhes.", "error");
                 return;
             }
@@ -675,7 +675,10 @@ class PainelBuscaControle {
 
         this._conteinerResultados.querySelectorAll('.pts-status-box').forEach(el => el.remove());
 
-        const msgFinal = tipo === 'loading' ? `⏳ ${msg}` : msg;
+        let msgFinal = msg;
+        if (tipo === 'loading') msgFinal = `${this._uiFacade.icons.loading()} ${msg}`;
+        else if (tipo === 'success') msgFinal = `${this._uiFacade.icons.get('CHECK_CIRCLE_FILL', { color: 'var(--th-success)' })} ${msg}`;
+        
         const variantFinal = tipo === 'loading' ? 'loading' : tipo;
         const statusBoxObj = this._uiFacade.createStatusBox(this._conteinerResultados, msgFinal, variantFinal);
 
@@ -722,8 +725,8 @@ class CnaeCardResultado {
 
         // Cabeçalho com Razão Social (Fonte clara/branca)
         const title = document.createElement('div');
-        title.style.cssText = 'font-weight: bold; color: var(--th-text-bright); font-size: 14px; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px;';
-        title.innerText = `🏢 ${this._dados.razaoSocial || 'Empresa não encontrada'}`;
+        title.style.cssText = 'font-weight: bold; color: var(--th-text-bright); font-size: 14px; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px; display: flex; align-items: center; gap: 8px;';
+        title.innerHTML = `${this._uiFacade.icons.get('SUITCASE_LG', { color: 'var(--th-primary)' })} ${this._dados.razaoSocial || 'Empresa não encontrada'}`;
         root.appendChild(title);
 
         // Grid de informações básicas em uma única linha (Flex Row)
