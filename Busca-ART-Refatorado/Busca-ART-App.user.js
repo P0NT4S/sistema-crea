@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         RMO Busca ART (V2 - Arquitetura POO)
 // @namespace    https://github.com/P0NT4S/
-// @version      10.0.5
+// @version      10.0.7
 // @description  Orquestrador de buscas de ART 100% repaginado para arquitetura POO/MVC e Motor Assíncrono isolado.
 // @author       P0nt4s
 // @match        https://mobile.creadf.org.br/sgf_web_21/www/*
@@ -70,9 +70,46 @@
 
         isInitialized = true;
         appUtils.log.success("Status", "Injeção de Bibliotecas POO concluída.");
-        appCommBridge.definirModoTeste(true);
 
         if (ThemeManager) ThemeManager.init(); // Vem da Lib UIFactory
+
+        // Integração com o Painel de Configurações Global
+        window.addEventListener('P0NT4S_ConfigUpdate', (e) => {
+            const conf = e.detail;
+            if (conf) {
+                appUtils.log.info("ConfigSync", "Recebendo configurações globais do Painel.", conf);
+
+                try {
+                    // Aplica Modo Teste na bridge local
+                    appCommBridge.definirModoTeste(conf.modoTeste);
+
+                    // Aplica Tema Localmente
+                    if (conf.tema === 'light') {
+                        document.documentElement.setAttribute('data-theme', 'light');
+                        localStorage.setItem('pts_theme_pref', 'light');
+                    } else {
+                        document.documentElement.removeAttribute('data-theme');
+                        localStorage.setItem('pts_theme_pref', 'dark');
+                    }
+
+                    // Guarda configurações ativas no Utils para uso futuro (ex: arquivamento)
+                    appUtils.configGlobal = conf;
+
+                    // Responde informando que a execução foi bem sucedida
+                    window.dispatchEvent(new CustomEvent('P0NT4S_ConfigAck', {
+                        detail: { script: 'Caça-ART', status: 'sucesso' }
+                    }));
+
+                } catch (err) {
+                    window.dispatchEvent(new CustomEvent('P0NT4S_ConfigAck', {
+                        detail: { script: 'Caça-ART', status: 'erro', erro: err.message }
+                    }));
+                }
+            }
+        });
+
+        // Solicita as configurações ao Painel (caso ele já esteja carregado)
+        window.dispatchEvent(new CustomEvent('P0NT4S_RequestConfig'));
 
         const dependenciasGerais = {
             UIFactory: appUIFactory,

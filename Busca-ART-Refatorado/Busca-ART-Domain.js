@@ -382,6 +382,7 @@ class FiltroPorNumeroART extends IFiltroBusca {
     constructor(input, dependencias) {
         super();
         this._CommBridge = dependencias.CommBridge;
+        this._Utils = dependencias.Utils;
         this.numeroArt = input.numeroArt.trim();
         if (this.numeroArt.length < 10) throw new Error("Número de ART inválido.");
     }
@@ -391,40 +392,39 @@ class FiltroPorNumeroART extends IFiltroBusca {
     construirQueryParams() { return new URLSearchParams(); }
 
     async processarPagina() {
-        const url = 'https://art.creadf.org.br/art1025/funcoes/form_impressao_tos.php';
-        
-        // Para que a página abra "como uma aba real" e não apenas como texto, 
-        // usamos a técnica de submissão de formulário oculto com target _blank.
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = url;
-        form.target = '_blank';
-        form.style.display = 'none';
+        try {
+            // 1. Busca o HTML da página de impressão de forma assíncrona (Background Fetch)
+            const response = await this._CommBridge.apiART.gerarImpressaoArt(this.numeroArt);
+            const html = response.responseText;
 
-        const campos = {
-            'rnp_ficha_intranet': '1',
-            'NUMERO_DA_ART': this.numeroArt,
-            'envia': 'Consultar ART'
-        };
+            // 2. Utiliza o Parser de Domínio para extrair os dados estruturados
+            const detalhes = this._Utils.crea.parser.parseDetalhe(html);
+            if (!detalhes || !detalhes.numeroART) throw new Error("ART não localizada ou sem permissão de acesso.");
 
-        for (const nome in campos) {
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = nome;
-            input.value = campos[nome];
-            form.appendChild(input);
+            // 3. Formata o endereço conforme regra solicitada: logradouro, numero, complemento, bairro, cidade-uf
+            const e = detalhes.obra.endereco;
+            const partes = [e.logradouro, e.numero, e.complemento, e.bairro].filter(p => p && p.trim() !== "");
+            const enderecoFormatado = `${partes.join(", ")}, ${e.cidade}-${e.uf}`;
+
+            // 4. Retorna o DTO compatível com a renderização de CardResultado
+            return {
+                metadados: { totalPaginas: 1, totalOcorrencias: 1, artsNaPagina: 1 },
+                matches: [{
+                    id: `direct-${this.numeroArt}`,
+                    url: `https://art.creadf.org.br/art1025/funcoes/form_impressao_tos.php?rnp_ficha_intranet=1&NUMERO_DA_ART=${this.numeroArt}`,
+                    artNum: detalhes.numeroART,
+                    owner: detalhes.obra.proprietario,
+                    address: enderecoFormatado,
+                    dataRegistro: detalhes.dataRegistro,
+                    docFormatado: detalhes.contrato.documento || detalhes.obra.documento,
+                    docLimpo: detalhes.contrato.documentoLimpo || detalhes.obra.documentoLimpo,
+                    cacheDetalhes: detalhes
+                }]
+            };
+        } catch (erro) {
+            console.error("[FiltroNumeroART]", erro);
+            throw new Error(`Falha ao abrir ART ${this.numeroArt}: ${erro.message}`);
         }
-
-        document.body.appendChild(form);
-        form.submit();
-        
-        // Limpeza do DOM após o disparo
-        setTimeout(() => { if (form.parentNode) form.parentNode.removeChild(form); }, 500);
-
-        return { 
-            metadados: { totalPaginas: 1, totalOcorrencias: 1, artsNaPagina: 1 }, 
-            matches: [{ id: 'direct', isAction: true, message: `ART ${this.numeroArt} aberta no navegador.` }] 
-        };
     }
 }
 

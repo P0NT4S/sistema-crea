@@ -66,8 +66,16 @@ class RmoRegistradorController {
         // 2. Injeta o ID visualmente na toolbar do Ionic (comportamento do legado mantido)
         this._creaHelper.rmo.injetarVisualToolbar(this._modelo.idRmo);
 
-        // 3. Cria o FAB de toggle
-        this._montarFab();
+        // 3. Cria o FAB de toggle usando o padrão da GUI
+        this._painelUI.criarBotaoFab((foiConstruido) => {
+            if (!foiConstruido) {
+                // Primeira abertura: constrói o painel com o estado atual do model
+                this._painelUI.construir(this._modelo);
+            } else {
+                // Aberturas subsequentes: apenas alterna visibilidade
+                this._painelUI.toggle();
+            }
+        });
 
         // 4. Dispara a consulta background sem bloquear a UI
         this._carregarDadosBackground();
@@ -112,7 +120,10 @@ class RmoRegistradorController {
             const payload = new PayloadRegistroRmo(this._modelo).serializar();
             await this._servico.salvarRmo(payload);
 
-            // E. Sucesso: feedback visual, toast global e fecha o painel
+            // E. Injeta a descrição nas observações da página e aciona o salvar nativo
+            await this._servico.salvarNaPagina(this._creaHelper, dadosForm.descricao);
+
+            // F. Sucesso: feedback visual, toast global e fecha o painel
             this._painelUI.atualizarFeedback('RMO registrada com sucesso!', 'success');
             this._ui.toast('RMO registrada com sucesso! ✅', 'success');
             this._log.success('Controller', 'Payload processado com êxito.', payload);
@@ -140,29 +151,7 @@ class RmoRegistradorController {
     // MÉTODOS PRIVADOS (internos ao Controller)
     // ========================================================================
 
-    /**
-     * Cria e monta o FAB (Floating Action Button) de toggle do painel.
-     * Ao clicar pela primeira vez, o painel é construído com o estado atual do model.
-     * Nos cliques seguintes, apenas alterna a visibilidade.
-     * @private
-     */
-    _montarFab() {
-        const iconeFab = IconSet.get('FLOPPY', { color: '#fff', size: '20px' });
 
-        const fab = new FabButton(this._ui.core, iconeFab, () => {
-            if (!this._painelUI.foiConstruido) {
-                // Primeira abertura: constrói o painel com o estado atual do model
-                this._painelUI.construir(this._modelo);
-            } else {
-                // Aberturas subsequentes: apenas alterna visibilidade
-                this._painelUI.toggle();
-            }
-        }, 'Registrar / Editar RMO');
-
-        // Identidade visual: FAB de sucesso para diferenciar do FAB de busca
-        fab.el.style.background = 'var(--th-success)';
-        fab.mount();
-    }
 
     /**
      * Consulta silenciosa em background para pré-carregar os dados da RMO.

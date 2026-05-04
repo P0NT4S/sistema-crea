@@ -104,4 +104,50 @@ class RmoRegistradorService {
             throw erro;
         }
     }
+
+    /**
+     * Injeta a descrição no campo de observações da RMO na página atual
+     * e aciona o salvamento nativo do sistema do CREA.
+     * @param {CreaHelper} creaHelper - Instância para acesso à RMO nativa.
+     * @param {string} descricao - Texto a ser concatenado.
+     */
+    async salvarNaPagina(creaHelper, descricao) {
+        if (!descricao || descricao.trim() === '') return false;
+
+        this._log.primary('RmoService', 'Injetando descrição nas observações e acionando salvar nativo...');
+        try {
+            const abaOutros = await creaHelper.rmo.getDadosRmo('outros');
+            if (!abaOutros) {
+                this._log.warning('RmoService', 'Não foi possível obter a aba "outros" do Angular.');
+                return false;
+            }
+
+            const obsAtuais = abaOutros.observacoes || "";
+            // Evita duplicação caso o usuário clique em salvar várias vezes com a mesma descrição
+            if (obsAtuais.includes(descricao)) {
+                this._log.info('RmoService', 'A descrição já está presente nas observações. Apenas salvando...');
+            } else {
+                const separador = obsAtuais ? '\n\n' : '';
+                const novaObs = `${obsAtuais}${separador}${descricao}`;
+                
+                const injetou = creaHelper.rmo.setDadosRmo({ outros: { observacoes: novaObs } });
+                if (!injetou) {
+                    this._log.error('RmoService', 'Falha ao injetar as novas observações no Angular.');
+                    return false;
+                }
+            }
+
+            const salvo = await creaHelper.rmo.salvarRMO();
+            if (salvo) {
+                this._log.success('RmoService', 'RMO salva no sistema nativo com sucesso.');
+                return true;
+            } else {
+                this._log.error('RmoService', 'Falha ao acionar o salvamento nativo.');
+                return false;
+            }
+        } catch (erro) {
+            this._log.error('RmoService', 'Exceção ao salvar na página.', erro);
+            throw erro;
+        }
+    }
 }

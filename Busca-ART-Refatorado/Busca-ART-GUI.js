@@ -477,8 +477,11 @@ class CardResultado {
 
         // 3. Endereço e Botão de Detalhes
         const rowDiv = document.createElement('div');
-        rowDiv.style.cssText = "margin-top: 8px; border-top: 1px solid rgba(128,128,128,0.25); display: flex; justify-content: space-between; align-items: flex-end; padding-top: 8px; gap: 8px;";
-        rowDiv.innerHTML = `<div style="font-size: 13px; color: var(--th-text-light); line-height: 1.4; flex: 1; display: flex; align-items: center; gap: 6px;">${this._uiFacade.icons.get('SIGNPOST_FILL', { color: 'var(--th-success)' })} ${this._dadosART.address || "N/A"}</div>`;
+        rowDiv.style.cssText = "margin-top: 8px; border-top: 1px solid rgba(128,128,128,0.25); display: flex; align-items: flex-start; padding-top: 8px; gap: 8px;";
+        rowDiv.innerHTML = `
+            <span style="flex-shrink: 0; margin-top: 3px;">${this._uiFacade.icons.get('SIGNPOST_FILL', { color: 'var(--th-success)' })}</span>
+            <span style="font-size: 13px; color: var(--th-text-light); line-height: 1.4; flex: 1;">${this._dadosART.address || "N/A"}</span>
+        `;
         rootContent.appendChild(rowDiv);
 
         const btnAnchor = document.createElement('div');
@@ -630,6 +633,27 @@ class PainelBuscaControle {
         this._resultados = [];
     }
 
+    /**
+     * Cria e monta o FAB (Floating Action Button) de toggle do painel.
+     * @param {Function} onToggle Callback chamado quando o botão for clicado.
+     */
+    criarBotaoFab(onToggle) {
+        const icon = this._uiFacade.icons.get('SEARCH', { size: '24px' });
+        const fab = this._uiFacade.createFab(
+            icon,
+            () => {
+                if (typeof onToggle === 'function') onToggle(this.foiConstruido());
+            },
+            "Painel de pesquisa"
+        );
+        fab.el.style.background = 'var(--th-info)';
+        fab.mount();
+    }
+
+    foiConstruido() {
+        return this._painelBusca !== null && document.getElementById('caca-art-painel') !== null;
+    }
+
     construirPainel(listaModos) {
         if (document.getElementById('caca-art-painel')) {
             this.exibir();
@@ -680,7 +704,7 @@ class PainelBuscaControle {
         let msgFinal = msg;
         if (tipo === 'loading') msgFinal = `${this._uiFacade.icons.loading()} ${msg}`;
         else if (tipo === 'success') msgFinal = `${this._uiFacade.icons.get('CHECK_CIRCLE_FILL', { color: 'var(--th-success)' })} ${msg}`;
-        
+
         const variantFinal = tipo === 'loading' ? 'loading' : tipo;
         const statusBoxObj = this._uiFacade.createStatusBox(this._conteinerResultados, msgFinal, variantFinal);
 

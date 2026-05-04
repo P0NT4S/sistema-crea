@@ -679,6 +679,57 @@ class RmoInterceptor {
             return false;
         }
     }
+
+    /**
+     * Aciona o método nativo de salvamento da RMO.
+     * @returns {Promise<boolean>} Status indicando se a chamada ao método nativo foi bem-sucedida.
+     */
+    async salvarRMO() {
+        const inst = this.conectar();
+        if (!inst || typeof inst.salvar !== 'function') {
+            this.core.log.error("RmoInterceptor", "Método 'salvar' nativo não encontrado.");
+            return false;
+        }
+
+        try {
+            await inst.salvar();
+            this.core.log.success("RmoInterceptor", "Comando nativo 'salvar' disparado com sucesso.");
+            return true;
+        } catch (err) {
+            this.core.log.error("RmoInterceptor", `Falha ao acionar salvar nativo: ${err.message}`);
+            return false;
+        }
+    }
+
+    /**
+     * Aciona o método nativo de envio da RMO.
+     * Como regra de segurança, aciona salvarRMO() logo no início.
+     * @param {Object} params - Parâmetros esperados pelo método nativo 'enviar' (ex: { para: 'fiscal' }).
+     * @returns {Promise<boolean>} Status indicando se a chamada ao método nativo foi bem-sucedida.
+     */
+    async enviarRMO(params = { para: 'fiscal' }) {
+        // Salva a RMO logo no início para evitar problemas, conforme solicitado
+        const salvo = await this.salvarRMO();
+        if (!salvo) {
+            this.core.log.warning("RmoInterceptor", "Abortando envio porque o salvamento prévio falhou.");
+            return false;
+        }
+
+        const inst = this.conectar();
+        if (!inst || typeof inst.enviar !== 'function') {
+            this.core.log.error("RmoInterceptor", "Método 'enviar' nativo não encontrado.");
+            return false;
+        }
+
+        try {
+            await inst.enviar(params);
+            this.core.log.success("RmoInterceptor", "Comando nativo 'enviar' disparado com sucesso.");
+            return true;
+        } catch (err) {
+            this.core.log.error("RmoInterceptor", `Falha ao acionar enviar nativo: ${err.message}`);
+            return false;
+        }
+    }
 }
 
 /**

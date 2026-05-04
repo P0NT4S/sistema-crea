@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         RMO Registrador (V2 - Arquitetura POO)
 // @namespace    https://github.com/P0NT4S/
-// @version      6.0.0
+// @version      6.0.2
 // @description  Painel de registro e edição de RMOs. Reescrito em arquitetura POO/MVC com camadas Domain, Service, GUI e Controller.
 // @author       P0nt4s
 // @match        https://mobile.creadf.org.br/sgf_web_21/www/*
@@ -59,8 +59,8 @@
         }
 
         // Instanciação das dependências em ordem (respeitando a cadeia de injeção)
-        const appUtils      = new CoreUtils({ logName: 'RmoRegistrador' });
-        const appUIFactory  = new UIFacade(appUtils);
+        const appUtils = new CoreUtils({ logName: 'RmoRegistrador' });
+        const appUIFactory = new UIFacade(appUtils);
         const appCommBridge = new CommBridge(appUtils, appUIFactory);
         const appCreaHelper = new CreaHelper(appUtils);
 
@@ -73,10 +73,48 @@
         // Inicializa o ThemeManager para aplicar a preferência de tema salva
         if (typeof ThemeManager !== 'undefined') ThemeManager.init();
 
+        // Integração com o Painel de Configurações Global
+        window.addEventListener('P0NT4S_ConfigUpdate', (e) => {
+            const conf = e.detail;
+            if (conf) {
+                appUtils.log.info("ConfigSync", "Recebendo configurações globais do Painel.", conf);
+
+                try {
+                    // Aplica Modo Teste na bridge local
+                    appCommBridge.definirModoTeste(conf.modoTeste);
+
+                    // Aplica Tema Localmente
+                    if (conf.tema === 'light') {
+                        document.documentElement.setAttribute('data-theme', 'light');
+                        localStorage.setItem('pts_theme_pref', 'light');
+                    } else {
+                        document.documentElement.removeAttribute('data-theme');
+                        localStorage.setItem('pts_theme_pref', 'dark');
+                    }
+
+                    // Guarda configurações ativas no Utils para uso futuro (ex: arquivamento)
+                    appUtils.configGlobal = conf;
+
+                    // Responde informando que a execução foi bem sucedida
+                    window.dispatchEvent(new CustomEvent('P0NT4S_ConfigAck', {
+                        detail: { script: 'RMO-Registrador', status: 'sucesso' }
+                    }));
+
+                } catch (err) {
+                    window.dispatchEvent(new CustomEvent('P0NT4S_ConfigAck', {
+                        detail: { script: 'RMO-Registrador', status: 'erro', erro: err.message }
+                    }));
+                }
+            }
+        });
+
+        // Solicita as configurações ao Painel (caso ele já esteja carregado)
+        window.dispatchEvent(new CustomEvent('P0NT4S_RequestConfig'));
+
         // Monta o pacote de dependências para o Controller
         const dependencias = {
-            UIFactory:  appUIFactory,
-            Utils:      appUtils,
+            UIFactory: appUIFactory,
+            Utils: appUtils,
             CommBridge: appCommBridge,
             creaHelper: appCreaHelper,
         };

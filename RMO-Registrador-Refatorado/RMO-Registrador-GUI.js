@@ -80,7 +80,7 @@ class PainelRegistroRmo {
             </div>
 
             <div class="pts-group" style="margin-top: 12px;">
-                <label class="pts-label">Descrição da Matéria-Prima</label>
+                <label class="pts-label">Observação</label>
                 <textarea
                     id="rmo-reg-descricao"
                     class="pts-input"
@@ -105,13 +105,13 @@ class PainelRegistroRmo {
         `;
 
         this._painel = new Panel(this._ui.core, {
-            id:          PainelRegistroRmo.PAINEL_ID,
-            title:       `${IconSet.get('FLOPPY', { color: 'currentColor', fill: true, size: '16px' })} Registrar RMO`,
-            width:       '400px',
-            persist:     true,  // O painel sobrevive ao fechar (hide), não é destruído
+            id: PainelRegistroRmo.PAINEL_ID,
+            title: `${IconSet.get('FLOPPY', { color: 'currentColor', fill: true, size: '16px' })} Registrar RMO`,
+            width: '400px',
+            persist: true,  // O painel sobrevive ao fechar (hide), não é destruído
             closeButton: true,
-            draggable:   true,
-            content:     htmlFormulario,
+            draggable: true,
+            content: htmlFormulario,
         });
 
         this._painel.mount();
@@ -146,6 +146,23 @@ class PainelRegistroRmo {
         return this._painel !== null;
     }
 
+    /**
+     * Cria e monta o FAB (Floating Action Button) de toggle do painel.
+     * @param {Function} onToggle Callback chamado quando o botão for clicado.
+     */
+    criarBotaoFab(onToggle) {
+        const icon = this._ui.icons.get('FLOPPY', { size: '20px' });
+        const fab = this._ui.createFab(
+            icon,
+            () => {
+                if (typeof onToggle === 'function') onToggle(this.foiConstruido);
+            },
+            'Registrar / Editar RMO'
+        );
+        fab.el.style.background = 'var(--th-success)';
+        fab.mount();
+    }
+
     // ========================================================================
     // ATUALIZAÇÃO DE ESTADO (chamados pelo Controller após ações assíncronas)
     // ========================================================================
@@ -157,7 +174,7 @@ class PainelRegistroRmo {
     bloquearForm(ativo) {
         if (!this._selectStatus || !this._textareaDescricao || !this._btnSalvar) return;
 
-        this._selectStatus.disabled    = ativo;
+        this._selectStatus.disabled = ativo;
         this._textareaDescricao.disabled = ativo;
         // O botão volta para o estado baseado na validação, não simplesmente habilita
         if (!ativo) {
@@ -165,7 +182,7 @@ class PainelRegistroRmo {
         } else {
             this._btnSalvar.disabled = true;
             this._btnSalvar.style.opacity = '0.5';
-            this._btnSalvar.style.cursor  = 'not-allowed';
+            this._btnSalvar.style.cursor = 'not-allowed';
         }
     }
 
@@ -180,9 +197,9 @@ class PainelRegistroRmo {
 
         const icones = {
             success: IconSet.get('CHECK_CIRCLE', { color: 'var(--th-success)', fill: true }),
-            error:   IconSet.get('EXCLAMATION_TRIANGLE', { color: 'var(--th-error)', fill: true }),
+            error: IconSet.get('EXCLAMATION_TRIANGLE', { color: 'var(--th-error)', fill: true }),
             warning: IconSet.get('EXCLAMATION_TRIANGLE', { color: 'var(--th-warning)', fill: true }),
-            info:    IconSet.get('INFO_CIRCLE', { color: 'var(--th-info)', fill: true }),
+            info: IconSet.get('INFO_CIRCLE', { color: 'var(--th-info)', fill: true }),
             loading: IconSet.loading({ size: '16px', color: 'var(--th-primary)' }),
         };
 
@@ -214,9 +231,9 @@ class PainelRegistroRmo {
      */
     _vincularElementosInternativos() {
         const corpo = this._painel.el;
-        this._selectStatus      = corpo.querySelector('#rmo-reg-status');
+        this._selectStatus = corpo.querySelector('#rmo-reg-status');
         this._textareaDescricao = corpo.querySelector('#rmo-reg-descricao');
-        this._btnSalvar         = corpo.querySelector('#rmo-reg-btn-salvar');
+        this._btnSalvar = corpo.querySelector('#rmo-reg-btn-salvar');
 
         // Monta o KeyValue do Nº da RMO usando os componentes nativos da UIFactory.
         // O CopyableText é passado como valor HTMLElement, que o KeyValue aceita nativamente.
@@ -242,7 +259,7 @@ class PainelRegistroRmo {
         this._btnSalvar.addEventListener('click', () => {
             if (typeof this.onSalvarClicado === 'function' && !this._btnSalvar.disabled) {
                 this.onSalvarClicado({
-                    status:    this._selectStatus.value,
+                    status: this._selectStatus.value,
                     descricao: this._textareaDescricao.value,
                 });
             }
@@ -261,7 +278,7 @@ class PainelRegistroRmo {
         // Cada mudança de campo atualiza o modelo e reavalia a validade
         this._selectStatus.addEventListener('change', () => {
             // Atualiza o model com o novo status (pode jogar erro se inválido, que não ocorre pois select é restrito)
-            try { modelo.status = new StatusRmo(this._selectStatus.value); } catch (e) {}
+            try { modelo.status = new StatusRmo(this._selectStatus.value); } catch (e) { }
             modelo.descricao = this._textareaDescricao.value;
             this._dispararValidacao(modelo);
         });
@@ -290,12 +307,12 @@ class PainelRegistroRmo {
             estaValido = modelo.estaValido();
         } else {
             // Fallback direto: lê os inputs sem modelo (usado em bloquearForm/false)
-            const statusAtual    = this._selectStatus?.value     || '';
+            const statusAtual = this._selectStatus?.value || '';
             const descricaoAtual = this._textareaDescricao?.value || '';
             try {
                 const statusTemp = new StatusRmo(statusAtual || null);
                 const modeloTemp = new RmoRegistroModel(null);
-                modeloTemp.status    = statusTemp;
+                modeloTemp.status = statusTemp;
                 modeloTemp.descricao = descricaoAtual;
                 estaValido = modeloTemp.estaValido();
             } catch (e) {
@@ -303,8 +320,8 @@ class PainelRegistroRmo {
             }
         }
 
-        this._btnSalvar.disabled      = !estaValido;
-        this._btnSalvar.style.opacity = estaValido ? '1'            : '0.5';
-        this._btnSalvar.style.cursor  = estaValido ? 'pointer'      : 'not-allowed';
+        this._btnSalvar.disabled = !estaValido;
+        this._btnSalvar.style.opacity = estaValido ? '1' : '0.5';
+        this._btnSalvar.style.cursor = estaValido ? 'pointer' : 'not-allowed';
     }
 }

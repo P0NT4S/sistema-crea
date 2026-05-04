@@ -19,14 +19,20 @@ class BuscaARTUIFactory {
     }
 
     /**
-     * Fabrica o painel completo de buscas com seus subformulários.
-     * @param {BuscaARTController} appController - Controller atuando como Mediador.
-     * @param {Object} dadosContextuais - Dados colhidos da página atual para pré-preenchimento.
-     * @returns {PainelBuscaControle} Painel montado.
+     * Cria a instância base do Painel (coordenador).
+     * @param {BuscaARTController} appController
+     * @returns {PainelBuscaControle}
      */
-    montarPainelDeBusca(appController, dadosContextuais) {
-        const painelUI = new PainelBuscaControle(appController, this._uiFacade);
-        
+    criarPainelControleBase(appController) {
+        return new PainelBuscaControle(appController, this._uiFacade);
+    }
+
+    /**
+     * Constrói e injeta os formulários na instância base do painel de forma preguiçosa.
+     * @param {PainelBuscaControle} painelUI
+     * @param {Object} dadosContextuais
+     */
+    injetarFormularios(painelUI, dadosContextuais) {
         const i = (name) => this._uiFacade.icons.get(name, { color: 'var(--th-primary)', fill: true });
 
         const formEnd = new FormularioBusca(this._uiFacade, 'address', `${i('GEO_ALT')} Por Endereço`, (ctx, inputs, ui) => {
@@ -89,7 +95,6 @@ class BuscaARTUIFactory {
         });
 
         painelUI.construirPainel([formEnd, formCont, formDoc, formNum, formCnae, formProf]);
-        return painelUI;
     }
 
     /**

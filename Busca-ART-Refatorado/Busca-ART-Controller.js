@@ -29,16 +29,17 @@ class BuscaARTController {
     }
 
     inicializar() {
-        const _fab = this._UI.createFab(this._UI.icons.get('SEARCH'), async () => {
-            if (!this._painelUI) {
+        // Instancia o controlador visual precocemente apenas para renderizar o FAB
+        this._painelUI = this._uiFactory.criarPainelControleBase(this);
+        
+        this._painelUI.criarBotaoFab(async (foiConstruido) => {
+            if (!foiConstruido) {
                 const autoData = await this._extrairDadosContextuaisCasoExistaRmoAberto();
-                this._painelUI = this._uiFactory.montarPainelDeBusca(this, autoData);
+                this._uiFactory.injetarFormularios(this._painelUI, autoData);
             } else {
                 this._painelUI.toggle();
             }
-        }, "Alternar Oráculo");
-        
-        _fab.mount();
+        });
     }
 
     /* --------------------------------------------------------------------------

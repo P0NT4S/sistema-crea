@@ -86,7 +86,7 @@ class VarredorDeArtsService {
                 // 6. Testes de borda se for página vazia para nossos filtros mas que contém lixo de sistema
                 if (pag >= estado.totalPaginas) {
                     this.onStatusMudou('success', `Varredura limpa concluída nas ${estado.totalPaginas} páginas.`);
-                    this.onFimDaBusca(`Várredura exaurida.`);
+                    this.onFimDaBusca(`Busca concluída.`);
                     return;
                 }
 
