@@ -47,7 +47,8 @@ class ConfiguracoesController {
     }
 
     alterarArquivamento(isArquivamento) {
-        this.service.updateConfig({ arquivamentoAuto: isArquivamento });
+        this.service.updateConfig({ arquivamentoAuxiliado: isArquivamento });
+        this.ui.toast('Configuração de Arquivamento Auxiliado enviada aos scripts.', 'info');
     }
 
     /**

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         RMO Registrador (V2 - Arquitetura POO)
 // @namespace    https://github.com/P0NT4S/
-// @version      6.0.2
+// @version      6.0.3
 // @description  Painel de registro e edição de RMOs. Reescrito em arquitetura POO/MVC com camadas Domain, Service, GUI e Controller.
 // @author       P0nt4s
 // @match        https://mobile.creadf.org.br/sgf_web_21/www/*
@@ -10,6 +10,7 @@
 // @grant        GM_xmlhttpRequest
 // @grant        GM_addStyle
 // @grant        GM_getResourceText
+// @grant        GM_openInTab
 // @require      https://raw.githubusercontent.com/P0NT4S/sistema-crea/main/Libs/UIFactory.js
 // @require      https://raw.githubusercontent.com/P0NT4S/sistema-crea/main/Libs/Utils.js
 // @require      https://raw.githubusercontent.com/P0NT4S/sistema-crea/main/Libs/CreaHelper.js
@@ -95,9 +96,17 @@
                     // Guarda configurações ativas no Utils para uso futuro (ex: arquivamento)
                     appUtils.configGlobal = conf;
 
+                    if (conf.arquivamentoAuxiliado !== undefined) {
+                        appUtils.log.info("ConfigSync", `Contrato de Arquivamento Auxiliado recebido: ${conf.arquivamentoAuxiliado ? 'Ativado' : 'Desativado'}`);
+                    }
+
                     // Responde informando que a execução foi bem sucedida
                     window.dispatchEvent(new CustomEvent('P0NT4S_ConfigAck', {
-                        detail: { script: 'RMO-Registrador', status: 'sucesso' }
+                        detail: {
+                            script: 'RMO-Registrador',
+                            status: 'sucesso',
+                            contrato: { arquivamentoAuxiliado: conf.arquivamentoAuxiliado }
+                        }
                     }));
 
                 } catch (err) {

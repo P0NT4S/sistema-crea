@@ -704,10 +704,10 @@ class RmoInterceptor {
     /**
      * Aciona o método nativo de envio da RMO.
      * Como regra de segurança, aciona salvarRMO() logo no início.
-     * @param {Object} params - Parâmetros esperados pelo método nativo 'enviar' (ex: { para: 'fiscal' }).
+     * @param {Object} params - Parâmetros esperados pelo método nativo 'enviar'.
      * @returns {Promise<boolean>} Status indicando se a chamada ao método nativo foi bem-sucedida.
      */
-    async enviarRMO(params = { para: 'fiscal' }) {
+    async enviarRMO(params = { para: 'proprietario', enviarEmail: false }) {
         // Salva a RMO logo no início para evitar problemas, conforme solicitado
         const salvo = await this.salvarRMO();
         if (!salvo) {
@@ -722,7 +722,17 @@ class RmoInterceptor {
         }
 
         try {
-            await inst.enviar(params);
+            // Tenta forçar o envio de email para false caso seja lido de form.value pelo checklist
+            if (inst.form && inst.form.value) {
+                inst.form.value.enviarEmail = false;
+            }
+            if (typeof inst.enviarEmail !== 'undefined') {
+                inst.enviarEmail = false;
+            }
+
+            // Repassa o parâmetro enviarEmail: false por garantia
+            const parametrosEnvio = { ...params, enviarEmail: false };
+            await inst.enviar(parametrosEnvio);
             this.core.log.success("RmoInterceptor", "Comando nativo 'enviar' disparado com sucesso.");
             return true;
         } catch (err) {

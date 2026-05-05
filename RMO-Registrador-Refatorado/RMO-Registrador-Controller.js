@@ -25,8 +25,9 @@ class RmoRegistradorController {
      * @param {CreaHelper}  dependencias.creaHelper  - Helper de integração com o CREA.
      */
     constructor(dependencias) {
-        this._ui         = dependencias.UIFactory;
-        this._log        = dependencias.Utils.log;
+        this._ui = dependencias.UIFactory;
+        this._utils = dependencias.Utils;
+        this._log = dependencias.Utils.log;
         this._creaHelper = dependencias.creaHelper;
 
         // Camada de Serviço: toda comunicação passa por aqui
@@ -97,7 +98,7 @@ class RmoRegistradorController {
 
         // A. Atualiza o model com os dados do formulário
         try {
-            this._modelo.status    = new StatusRmo(dadosForm.status);
+            this._modelo.status = new StatusRmo(dadosForm.status);
             this._modelo.descricao = dadosForm.descricao;
         } catch (erroValidacao) {
             // StatusRmo jogar exceção se o valor for inválido (não deveria ocorrer via select)
@@ -120,12 +121,24 @@ class RmoRegistradorController {
             const payload = new PayloadRegistroRmo(this._modelo).serializar();
             await this._servico.salvarRmo(payload);
 
-            // E. Injeta a descrição nas observações da página e aciona o salvar nativo
-            await this._servico.salvarNaPagina(this._creaHelper, dadosForm.descricao);
+            const isArquivamentoAuxiliado = this._utils.configGlobal && this._utils.configGlobal.arquivamentoAuxiliado === true;
 
-            // F. Sucesso: feedback visual, toast global e fecha o painel
-            this._painelUI.atualizarFeedback('RMO registrada com sucesso!', 'success');
-            this._ui.toast('RMO registrada com sucesso! ✅', 'success');
+            if (isArquivamentoAuxiliado) {
+                // E. Injeta a descrição, aciona o enviar nativo e abre a página de movimentação
+                this._painelUI.atualizarFeedback('Enviando RMO no sistema...', 'loading');
+                await this._servico.enviarEArquivarNaPagina(this._creaHelper, dadosForm.descricao, this._modelo.idRmo);
+
+                // F. Sucesso: feedback visual, toast global e fecha o painel
+                this._painelUI.atualizarFeedback('RMO registrada e enviada com sucesso!', 'success');
+                this._ui.toast('RMO enviada e pronta para arquivamento!', 'success');
+            } else {
+                // E. Injeta a descrição nas observações da página e aciona o salvar nativo
+                await this._servico.salvarNaPagina(this._creaHelper, dadosForm.descricao);
+
+                // F. Sucesso: feedback visual, toast global e fecha o painel
+                this._painelUI.atualizarFeedback('RMO registrada com sucesso!', 'success');
+                this._ui.toast('RMO registrada com sucesso!', 'success');
+            }
             this._log.success('Controller', 'Payload processado com êxito.', payload);
 
             // O painel apenas se oculta (persist=true); o estado do model fica salvo em memória
