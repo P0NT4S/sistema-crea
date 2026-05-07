@@ -284,15 +284,24 @@ class AbaDetalheObservacoes extends AbaDetalheBase {
 
 /**
  * @class AbaDetalheResponsaveis
- * @description Aba para interações de injeção de Empresa e Profissional.
+ * @description Aba para interações de injeção de Empresa e Profissional como envolvidos na RMO.
+ * Ao acionar a inserção, preenche automaticamente o número da ART, o tipo de regularização
+ * e as observações baseadas nas atividades técnicas, espelhando o comportamento do legado.
  */
 class AbaDetalheResponsaveis extends AbaDetalheBase {
-    constructor(uiFacade, conexaoRMO, utilsCore) {
+    /**
+     * @param {Object} uiFacade - Biblioteca de UI.
+     * @param {RmoInterceptor} conexaoRMO - Ponte com o Angular da RMO.
+     * @param {Object} utilsCore - Utilitários genéricos (text, format).
+     * @param {Object} dadosART - DTO do card de ART, necessário para extrair o artNum.
+     */
+    constructor(uiFacade, conexaoRMO, utilsCore, dadosART) {
         super();
         this._uiFacade = uiFacade;
         this._conexaoRMO = conexaoRMO;
         this._utilsCore = utilsCore;
-        this._dados = null;
+        this._dadosART = dadosART; // DTO do card (artNum, url, etc.)
+        this._dados = null;        // Dados profundos (parseDetalhe)
         this._root = document.createElement('div');
     }
 
@@ -307,16 +316,23 @@ class AbaDetalheResponsaveis extends AbaDetalheBase {
         profHeader.innerHTML = `<div style="font-weight: bold; color: var(--th-text); font-size: 13px;">Profissional Responsável</div>`;
         const btnEnvProfAnchor = document.createElement('div');
         profHeader.appendChild(btnEnvProfAnchor);
-        const btnEnvProf = this._uiFacade.createIconButton(btnEnvProfAnchor, this._uiFacade.icons.get('PERSON_FILL_ADD', { color: 'var(--th-primary)' }), () => this._inserirNovoEnvolvido("Profissional", {
-            nome: this._dados.responsavel.nome, cpfCnpj: this._utilsCore.text.apenasNumeros(this._dados.responsavel.registro)
-        }), 'Adicionar Profissional como Envolvido', true);
+        const btnEnvProf = this._uiFacade.createIconButton(
+            btnEnvProfAnchor,
+            this._uiFacade.icons.get('PERSON_FILL_ADD', { color: 'var(--th-primary)' }),
+            () => this._inserirNovoEnvolvido('Profissional', {
+                nome: this._dados.responsavel.nome,
+                cpfCnpj: this._utilsCore.text.apenasNumeros(this._dados.responsavel.registro),
+                titulo_profissional: this._dados.responsavel.titulo || ''
+            }, 'nome'),
+            'Adicionar Profissional como Envolvido',
+            true
+        );
         btnEnvProf.mount();
         this._root.appendChild(profHeader);
 
         this._root.appendChild(this._uiFacade.createKeyValue(null, "Nome", this._dados.responsavel.nome || "N/A").getNode());
         this._root.appendChild(this._uiFacade.createKeyValue(null, "Título", this._dados.responsavel.titulo || "N/A").getNode());
 
-        const regProfLimpo = this._utilsCore.text.apenasNumeros(this._dados.responsavel.registro || "");
         const cpProf = this._uiFacade.createCopyableText(null, this._dados.responsavel.registro || "N/A");
         this._root.appendChild(this._uiFacade.createKeyValue(null, "Registro", cpProf).getNode());
 
@@ -327,9 +343,19 @@ class AbaDetalheResponsaveis extends AbaDetalheBase {
         if (this._dados.responsavel.empresaContratada && this._dados.responsavel.empresaContratada.nome) {
             const btnEnvEmpAnchor = document.createElement('div');
             empHeader.appendChild(btnEnvEmpAnchor);
-            const btnEnvEmp = this._uiFacade.createIconButton(btnEnvEmpAnchor, this._uiFacade.icons.get('BUILDING_ADD', { color: 'var(--th-primary)' }), () => this._inserirNovoEnvolvido("Empresa", {
-                nome: this._dados.responsavel.empresaContratada.nome, cpfCnpj: this._utilsCore.text.apenasNumeros(this._dados.responsavel.empresaContratada.registro)
-            }), 'Adicionar Empresa como Envolvida', true);
+
+            // Para empresa, a busca é feita pelo registro limpo (apenas números)
+            const regEmpLimpo = this._utilsCore.text.apenasNumeros(this._dados.responsavel.empresaContratada.registro || '');
+            const btnEnvEmp = this._uiFacade.createIconButton(
+                btnEnvEmpAnchor,
+                this._uiFacade.icons.get('BUILDING_ADD', { color: 'var(--th-primary)' }),
+                () => this._inserirNovoEnvolvido('Empresa', {
+                    nome: this._dados.responsavel.empresaContratada.nome,
+                    cpfCnpj: regEmpLimpo  // Registro limpo (só números) para pesquisa no CREA
+                }, 'registro'),
+                'Adicionar Empresa como Envolvida',
+                true
+            );
             btnEnvEmp.mount();
         }
         this._root.appendChild(empHeader);
@@ -348,10 +374,49 @@ class AbaDetalheResponsaveis extends AbaDetalheBase {
         }
     }
 
-    _inserirNovoEnvolvido(tipo, payload) {
-        const sucesso = this._conexaoRMO.adicionarEnvolvido(payload, 'nome');
-        if (sucesso) this._uiFacade.toast(`Envolvido (${tipo}) adicionado.`, "success");
-        else this._uiFacade.toast(`Falha ao injetar ${tipo}.`, "error");
+    /**
+     * Gera o texto de observações baseado nas atividades técnicas da ART.
+     * Espelha o comportamento do `gerarObsAtividades` do legado.
+     * @returns {string} Texto formatado das atividades técnicas para o campo observações.
+     */
+    _gerarObsAtividades() {
+        if (!this._dados || !this._dados.atividadesTecnicas || this._dados.atividadesTecnicas.length === 0) {
+            return '';
+        }
+
+        const linhas = [];
+        this._dados.atividadesTecnicas.forEach(grupo => {
+            if (grupo && grupo.topico && grupo.itens) {
+                linhas.push(`[${grupo.topico.toUpperCase()}]`);
+                grupo.itens.forEach(item => linhas.push(`• ${item.descricao}`));
+                linhas.push('');
+            }
+        });
+
+        return linhas.join('\n').trim();
+    }
+
+    /**
+     * Monta o payload completo e aciona a injeção na RMO.
+     * Além dos dados do envolvido, preenche o número da ART, o tipo de regularização
+     * e as observações com as atividades técnicas automaticamente.
+     * @param {string} tipo - Label amigável ('Profissional' ou 'Empresa') para o toast de feedback.
+     * @param {Object} dadosBasicos - Dados do envolvido (nome, cpfCnpj, titulo_profissional).
+     * @param {string} [buscarPor='nome'] - Campo que dispara a busca na API interna do CREA.
+     */
+    _inserirNovoEnvolvido(tipo, dadosBasicos, buscarPor = 'nome') {
+        const artNumLimpo = this._utilsCore.text.apenasNumeros(this._dadosART.artNum || '');
+
+        const payloadCompleto = {
+            ...dadosBasicos,
+            art: artNumLimpo,
+            regularizacao: '30684',
+            observacoes: this._gerarObsAtividades()
+        };
+
+        const sucesso = this._conexaoRMO.adicionarEnvolvido(payloadCompleto, buscarPor);
+        if (sucesso) this._uiFacade.toast(`Envolvido (${tipo}) adicionado.`, 'success');
+        else this._uiFacade.toast(`Falha ao injetar ${tipo}.`, 'error');
     }
 
     getNode() { return this._root; }

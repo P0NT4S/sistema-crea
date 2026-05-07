@@ -129,7 +129,7 @@ class BuscaARTUIFactory {
         
         card.addAbaDetalhe(new AbaDetalheAtividades(this._uiFacade));
         card.addAbaDetalhe(new AbaDetalheObservacoes(this._uiFacade));
-        card.addAbaDetalhe(new AbaDetalheResponsaveis(this._uiFacade, this._creaHelper.rmo, this._utilsCore));
+        card.addAbaDetalhe(new AbaDetalheResponsaveis(this._uiFacade, this._creaHelper.rmo, this._utilsCore, dados));
         card.addAbaDetalhe(new AbaDetalheOutros(this._uiFacade, this._creaHelper.rmo, dados, this._utilsCore));
         
         return card;
