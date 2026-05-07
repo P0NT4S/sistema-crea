@@ -279,6 +279,16 @@ class PainelRegistroRmo {
         this._selectStatus.addEventListener('change', () => {
             // Atualiza o model com o novo status (pode jogar erro se inválido, que não ocorre pois select é restrito)
             try { modelo.status = new StatusRmo(this._selectStatus.value); } catch (e) { }
+
+            // Lógica para preenchimento de textos padrões
+            if (this._textareaDescricao.value.trim() === '') {
+                if (this._selectStatus.value === 'Regular') {
+                    this._textareaDescricao.value = 'RMO em situação regular. Nenhuma pendência observada.';
+                } else if (this._selectStatus.value === 'Informações Insuficientes') {
+                    this._textareaDescricao.value = 'Informações insuficientes para a conclusão da análise.';
+                }
+            }
+
             modelo.descricao = this._textareaDescricao.value;
             this._dispararValidacao(modelo);
         });

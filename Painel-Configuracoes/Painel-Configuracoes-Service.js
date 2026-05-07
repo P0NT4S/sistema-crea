@@ -4,7 +4,7 @@ class ConfiguracoesService {
         this.defaultConfig = {
             tema: 'light',
             modoTeste: false,
-            arquivamentoAuto: false
+            arquivamentoAuxiliado: false
         };
         // Carrega configurações persistidas (Fonte da Verdade)
         this.config = this._load();

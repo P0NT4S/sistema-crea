@@ -34,8 +34,10 @@ class ConfiguracoesGUI {
     }
 
     _criarPainel() {
+        const headerIcon = this.ui.icons.get('GEAR', { size: '16px', fill: true, color: 'currentColor' });
+
         this.panel = this.ui.createPanel({
-            title: "Configurações Globais P0NT4S",
+            title: `${headerIcon} Configurações Globais`,
             compact: true,
             persist: true,
             draggable: false,
@@ -43,7 +45,7 @@ class ConfiguracoesGUI {
         }).mount();
 
         // Posiciona no canto inferior esquerdo
-        this.panel.setPosition(0, window.innerHeight - 270);
+        this.panel.setPosition(0, window.innerHeight - 300);
 
         const content = document.createElement('div');
         content.style.display = 'flex';
@@ -96,27 +98,27 @@ class ConfiguracoesGUI {
 
         content.appendChild(criarSwitchRow(
             'tema',
-            'Modo Escuro',
-            'Alternar tema visual das interfaces',
+            'Alternar Tema',
+            'Muda a aparência do sistema entre os modos claro e escuro.',
             configAtual.tema === 'dark',
             (isActive) => this.controller.alterarTema(isActive ? 'dark' : 'light'),
             { on: 'MOON_FILL', off: 'SUN_FILL' }
         ));
 
         content.appendChild(criarSwitchRow(
-            'modoTeste',
-            'Modo de Teste',
-            'Redirecionar requisições de ART para localhost',
-            configAtual.modoTeste,
-            (isActive) => this.controller.alterarModoTeste(isActive)
+            'arquivamento',
+            'Rotina de Arquivamento',
+            'Automatiza a etapa de arquivamento após o registro da RMO.',
+            configAtual.arquivamentoAuxiliado,
+            (isActive) => this.controller.alterarArquivamento(isActive)
         ));
 
         content.appendChild(criarSwitchRow(
-            'arquivamento',
-            'Arquivamento Automático',
-            'Suporte futuro de arquivamento',
-            configAtual.arquivamentoAuto,
-            (isActive) => this.controller.alterarArquivamento(isActive)
+            'modoTeste',
+            'Modo de Teste',
+            'Redireciona requisições de API para ambiente local (Desenvolvedores).',
+            configAtual.modoTeste,
+            (isActive) => this.controller.alterarModoTeste(isActive)
         ));
 
         this.panel.setContent(content);
@@ -124,7 +126,7 @@ class ConfiguracoesGUI {
 
     _syncSwitches(config) {
         if (this.switches.tema) this.switches.tema.setValue(config.tema === 'dark');
+        if (this.switches.arquivamento) this.switches.arquivamento.setValue(config.arquivamentoAuxiliado);
         if (this.switches.modoTeste) this.switches.modoTeste.setValue(config.modoTeste);
-        if (this.switches.arquivamento) this.switches.arquivamento.setValue(config.arquivamentoAuto);
     }
 }

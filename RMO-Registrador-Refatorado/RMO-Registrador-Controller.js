@@ -122,8 +122,9 @@ class RmoRegistradorController {
             await this._servico.salvarRmo(payload);
 
             const isArquivamentoAuxiliado = this._utils.configGlobal && this._utils.configGlobal.arquivamentoAuxiliado === true;
+            const deveArquivar = isArquivamentoAuxiliado && (this._modelo.status.valor === 'Regular' || this._modelo.status.valor === 'Informações Insuficientes');
 
-            if (isArquivamentoAuxiliado) {
+            if (deveArquivar) {
                 // E. Injeta a descrição, aciona o enviar nativo e abre a página de movimentação
                 this._painelUI.atualizarFeedback('Enviando RMO no sistema...', 'loading');
                 await this._servico.enviarEArquivarNaPagina(this._creaHelper, dadosForm.descricao, this._modelo.idRmo);
