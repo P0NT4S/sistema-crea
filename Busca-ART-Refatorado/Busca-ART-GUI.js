@@ -89,12 +89,37 @@ class ConteinerFormulariosBusca {
         panelBodyWrapper.innerHTML = `
             <div id="forms-container"></div>
             <div id="divider-anchor"></div>
-            <div class="my-row" style="margin-top: 10px; display: flex; gap: 15px;">
-                <button id="art-btn-search" class="pts-btn pts-btn--primary" style="flex: 1; gap: 8px;">${this._uiFacade.icons.get('SEARCH')} Pesquisar</button>
-                <button id="art-btn-cancel" class="pts-btn pts-btn--error" style="display:none; flex: 1; background-color: var(--th-error); border-color: var(--th-error); color: white; gap: 8px;">${this._uiFacade.icons.get('BAN')} Parar Busca</button>
-            </div>
+            <div id="action-buttons-container" class="my-row" style="margin-top: 10px; display: flex; gap: 15px;"></div>
             <div id="art-results-container" style="margin-top: 20px;"></div>
         `;
+
+        this.btnSearch = this._uiFacade.createButton(
+            null, 
+            `${this._uiFacade.icons.get('SEARCH')} Pesquisar`, 
+            'primary', 
+            () => {
+                const formAtivo = this._formularios.find(f => f.getModoID() === this._modoAtivo);
+                this._callbacks.onSearch(this._modoAtivo, formAtivo.getValores());
+            }, 
+            true // Gatilho de ENTER Ativado!
+        );
+        this.btnSearch.el.id = 'art-btn-search';
+        this.btnSearch.el.style.flex = "1";
+
+        this.btnCancel = this._uiFacade.createButton(
+            null, 
+            `${this._uiFacade.icons.get('BAN')} Parar Busca`, 
+            'error', 
+            () => this._callbacks.onCancel(),
+            false
+        );
+        this.btnCancel.el.id = 'art-btn-cancel';
+        this.btnCancel.el.style.flex = "1";
+        this.btnCancel.el.style.display = "none";
+
+        const btnContainer = panelBodyWrapper.querySelector('#action-buttons-container');
+        btnContainer.appendChild(this.btnSearch.getNode());
+        btnContainer.appendChild(this.btnCancel.getNode());
 
         this.panelInstance = this._uiFacade.createPanel({
             id: 'caca-art-painel', title: `${this._uiFacade.icons.get('CRYSTAL_BALL', { size: '40px' })} Oráculo`, width: "550px", draggable: true, persist: true, closeButton: true,
@@ -164,11 +189,8 @@ class ConteinerFormulariosBusca {
     }
 
     _bindEvents() {
-        this.panelInstance.getNode().querySelector('#art-btn-search').onclick = () => {
-            const formAtivo = this._formularios.find(f => f.getModoID() === this._modoAtivo);
-            this._callbacks.onSearch(this._modoAtivo, formAtivo.getValores());
-        };
-        this.panelInstance.getNode().querySelector('#art-btn-cancel').onclick = () => this._callbacks.onCancel();
+        // Os eventos de click dos botões de pesquisa e cancelamento agora são geridos 
+        // diretamente durante a sua criação no UIFactory, habilitando funcionalidades como triggerOnEnter.
     }
 }
 

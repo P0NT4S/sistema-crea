@@ -401,15 +401,36 @@ class FormBase extends UIBase {
 }
 
 class ButtonBase extends SemanticBase {
-    constructor(core, parent, customClasses, baseClass, variant, onClick, isDisabled = false, hoverText = "") {
+    constructor(core, parent, customClasses, baseClass, variant, onClick, isDisabled = false, hoverText = "", triggerOnEnter = false) {
         super(core, parent, customClasses, 'button', baseClass, variant);
         this.onClick = onClick;
         this.isDisabled = isDisabled;
         this.hoverText = hoverText;
+        this.triggerOnEnter = triggerOnEnter;
 
         if (this.hoverText) this.el.title = this.hoverText;
         this.el.addEventListener('click', (e) => this._handleClick(e));
         if (this.isDisabled) this.disable();
+
+        if (this.triggerOnEnter) {
+            this._setupEnterTrigger();
+        }
+    }
+
+    _setupEnterTrigger() {
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !this.isDisabled && !this.el.disabled) {
+                const container = this.el.closest('.pts-panel, form, .pts-card');
+                const context = container || document.body;
+                
+                if (context.contains(document.activeElement)) {
+                    if (document.activeElement.tagName !== 'TEXTAREA') {
+                        e.preventDefault();
+                        this.el.click();
+                    }
+                }
+            }
+        });
     }
 
     _handleClick(event) {
@@ -498,21 +519,21 @@ class StatusBox extends SemanticTextBase {
 }
 
 class Button extends ButtonBase {
-    constructor(core, parent, text, variant = "primary", onClick, isDisabled = false) {
-        super(core, parent, 'pts-btn', 'pts-btn', variant, onClick, isDisabled);
+    constructor(core, parent, text, variant = "primary", onClick, isDisabled = false, triggerOnEnter = false) {
+        super(core, parent, 'pts-btn', 'pts-btn', variant, onClick, isDisabled, "", triggerOnEnter);
         this.text = text;
         this.setText(this.text);
     }
 
     setText(text) {
         this.text = text;
-        this.el.innerText = this.text;
+        this.el.innerHTML = this.text;
     }
 }
 
 class IconButton extends ButtonBase {
-    constructor(core, parent, icon, onClick, hoverText = "", isInline = false) {
-        super(core, parent, 'pts-btn-icon pts-hover-scale', 'pts-btn-icon', 'primary', onClick, false, hoverText);
+    constructor(core, parent, icon, onClick, hoverText = "", isInline = false, triggerOnEnter = false) {
+        super(core, parent, 'pts-btn-icon pts-hover-scale', 'pts-btn-icon', 'primary', onClick, false, hoverText, triggerOnEnter);
         this.isInline = isInline;
         if (this.isInline) this._addClass('pts-btn-inline');
 
@@ -874,6 +895,58 @@ class Input extends FormBase {
     }
 }
 
+class ToggleButton extends FormBase {
+    constructor(core, parent, label, isActive = false, onToggle, icons = { on: '', off: '' }) {
+        super(core, parent, 'pts-toggle', isActive);
+        this.label = label;
+        this.onToggle = onToggle;
+        this.icons = icons;
+        this.render();
+    }
+
+    render() {
+        this.el.innerHTML = `
+            <div class="pts-toggle-track">
+                <div class="pts-toggle-icon"></div>
+                <div class="pts-toggle-thumb"></div>
+            </div>
+            ${this.label ? `<span class="pts-toggle-label" style="font-size:13px; font-weight:600; color:var(--th-text);">${this.label}</span>` : ''}
+        `;
+
+        this.el.onclick = (e) => {
+            e.preventDefault();
+            this.toggle();
+        };
+
+        this._syncUI();
+    }
+
+    _getIconHTML() {
+        if (this.value && this.icons.on) return IconSet.customize(this.icons.on, { size: '12px' });
+        if (!this.value && this.icons.off) return IconSet.customize(this.icons.off, { size: '12px' });
+        return '';
+    }
+
+    toggle() {
+        this.value = !this.value;
+        if (typeof this.onToggle === 'function') this.onToggle(this.value);
+        this._syncUI();
+    }
+
+    _syncUI() {
+        if (this.value) {
+            this.el.classList.add('active');
+        } else {
+            this.el.classList.remove('active');
+        }
+        
+        const iconContainer = this.el.querySelector('.pts-toggle-icon');
+        if (iconContainer) {
+            iconContainer.innerHTML = this._getIconHTML();
+        }
+    }
+}
+
 class CopyableText extends UIBase {
     constructor(core, parent, display, cleanValue, tooltip = "Copiar dado", variant = "info") {
         super(core, parent, 'pts-copy', 'span');
@@ -1085,8 +1158,8 @@ class UIFacade {
     // --- Instanciadores (Factory Methods OOP) ---
     createPanel(config) { return new Panel(this.core, config); }
     createCard(parent, config) { return new Card(this.core, parent, config); }
-    createButton(parent, text, variant, onClick) { return new Button(this.core, parent, text, variant, onClick); }
-    createIconButton(parent, icon, onClick, hover, isInline) { return new IconButton(this.core, parent, icon, onClick, hover, isInline); }
+    createButton(parent, text, variant, onClick, triggerOnEnter = false) { return new Button(this.core, parent, text, variant, onClick, false, triggerOnEnter); }
+    createIconButton(parent, icon, onClick, hover, isInline, triggerOnEnter = false) { return new IconButton(this.core, parent, icon, onClick, hover, isInline, triggerOnEnter); }
     createFab(icon, onClick, hover) { return new FabButton(this.core, icon, onClick, hover); }
     createBadge(parent, text, variant, appearance) { return new Badge(this.core, parent, text, variant, appearance); }
     createStatusBox(parent, text, variant) { return new StatusBox(this.core, parent, text, variant); }
@@ -1095,6 +1168,7 @@ class UIFacade {
     createList(parent, items, isOrdered) { return new List(this.core, parent, items, isOrdered); }
     createInput(parent, label, placeholder, type, initVal) { return new Input(this.core, parent, label, placeholder, type, initVal); }
     createSelect(parent, label, options, initVal) { return new Select(this.core, parent, label, options, initVal); }
+    createToggleButton(parent, label, isActive, onToggle, icons) { return new ToggleButton(this.core, parent, label, isActive, onToggle, icons); }
     createDivider(parent, title, style) { return new Divider(this.core, parent, title, style); }
     createTabs(parent, items, isCarousel) { return new Tabs(this.core, parent, items, isCarousel); }
     createCarousel(parent, items, config) { return new Carousel(this.core, parent, items, config); }

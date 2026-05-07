@@ -52,29 +52,13 @@ class ConfiguracoesGUI {
 
         const configAtual = this.controller.getConfig();
 
-        // Helper para criar as linhas com checkbox estilizado como switch (básico)
-        // Injeta CSS para os toggle buttons
-        if (!document.getElementById('pts-switch-style')) {
-            const style = document.createElement('style');
-            style.id = 'pts-switch-style';
-            style.textContent = `
-                .pts-switch { position: relative; display: inline-block; width: 40px; height: 22px; margin-left: 10px; flex-shrink: 0; }
-                .pts-switch input { opacity: 0; width: 0; height: 0; }
-                .pts-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--th-border); transition: .3s; border-radius: 22px; }
-                .pts-slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: var(--th-bg); transition: .3s; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
-                .pts-switch input:checked + .pts-slider { background-color: var(--th-primary); }
-                .pts-switch input:checked + .pts-slider:before { transform: translateX(18px); }
-            `;
-            document.head.appendChild(style);
-        }
-
-        const criarSwitchRow = (id, labelText, descText, value, onChange) => {
+        const criarSwitchRow = (id, labelText, descText, value, onChange, icons = { on: '', off: '' }) => {
             const row = document.createElement('div');
             row.style.display = 'flex';
             row.style.justifyContent = 'space-between';
             row.style.alignItems = 'center';
             row.style.padding = '8px 0';
-            row.style.borderBottom = '1px solid var(--th-border)';
+            row.style.borderBottom = '1px solid var(--th-bg-light)';
 
             const labelContainer = document.createElement('div');
             labelContainer.style.display = 'flex';
@@ -94,24 +78,18 @@ class ConfiguracoesGUI {
             labelContainer.appendChild(label);
             labelContainer.appendChild(desc);
 
-            const switchContainer = document.createElement('label');
-            switchContainer.className = 'pts-switch';
+            const toggleBtn = this.ui.createToggleButton(
+                null,
+                '',
+                value,
+                onChange,
+                icons
+            );
 
-            const switchBtn = document.createElement('input');
-            switchBtn.type = 'checkbox';
-            switchBtn.checked = value;
-            switchBtn.addEventListener('change', (e) => onChange(e.target.checked));
-
-            const slider = document.createElement('span');
-            slider.className = 'pts-slider';
-
-            switchContainer.appendChild(switchBtn);
-            switchContainer.appendChild(slider);
-
-            this.switches[id] = switchBtn;
+            this.switches[id] = toggleBtn;
 
             row.appendChild(labelContainer);
-            row.appendChild(switchContainer);
+            row.appendChild(toggleBtn.getNode());
             return row;
         };
 
@@ -120,7 +98,8 @@ class ConfiguracoesGUI {
             'Modo Escuro',
             'Alternar tema visual das interfaces',
             configAtual.tema === 'dark',
-            (checked) => this.controller.alterarTema(checked ? 'dark' : 'light')
+            (isActive) => this.controller.alterarTema(isActive ? 'dark' : 'light'),
+            { on: 'MOON_FILL', off: 'SUN_FILL' }
         ));
 
         content.appendChild(criarSwitchRow(
@@ -128,7 +107,7 @@ class ConfiguracoesGUI {
             'Modo de Teste',
             'Redirecionar requisições de ART para localhost',
             configAtual.modoTeste,
-            (checked) => this.controller.alterarModoTeste(checked)
+            (isActive) => this.controller.alterarModoTeste(isActive)
         ));
 
         content.appendChild(criarSwitchRow(
@@ -136,15 +115,15 @@ class ConfiguracoesGUI {
             'Arquivamento Automático',
             'Suporte futuro de arquivamento',
             configAtual.arquivamentoAuto,
-            (checked) => this.controller.alterarArquivamento(checked)
+            (isActive) => this.controller.alterarArquivamento(isActive)
         ));
 
         this.panel.setContent(content);
     }
 
     _syncSwitches(config) {
-        if (this.switches.tema) this.switches.tema.checked = config.tema === 'dark';
-        if (this.switches.modoTeste) this.switches.modoTeste.checked = config.modoTeste;
-        if (this.switches.arquivamento) this.switches.arquivamento.checked = config.arquivamentoAuto;
+        if (this.switches.tema) this.switches.tema.setValue(config.tema === 'dark');
+        if (this.switches.modoTeste) this.switches.modoTeste.setValue(config.modoTeste);
+        if (this.switches.arquivamento) this.switches.arquivamento.setValue(config.arquivamentoAuto);
     }
 }

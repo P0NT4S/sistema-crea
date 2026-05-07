@@ -66,19 +66,19 @@
 
 /* --- 2. TEMA CLARO (Ativado via JS com data-theme="light") --- */
 :root[data-theme="light"] {
-    --th-surface: #f8fafc;
-    --th-surface-dark: #e2e8f0;
-    --th-surface-light: #ffffff;
+    --th-surface: #ffffff;
+    --th-surface-dark: #f1f5f9;
+    --th-surface-light: #e2e8f0;
 
-    --th-text-main: #0e1931;
-    --th-text-muted: #53647e;
-    --th-text-light: #28355a;
+    --th-text-main: #0f172a;
+    --th-text-muted: #64748b;
+    --th-text-light: #334155;
 
-    --th-primary: #7c3aed;
-    --th-primary-light: #8b5cf6;
-    --th-primary-dark: #6d28d9;
+    --th-primary: #6d28d9;
+    --th-primary-light: #7c3aed;
+    --th-primary-dark: #5b21b6;
 
-    --th-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    --th-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
 }
 
 /* ==========================================================================
@@ -314,12 +314,12 @@
     background: var(--th-primary-light);
 }
 
-.pts-btn--danger {
+.pts-btn--error {
     background: var(--th-error);
     color: white;
 }
 
-.pts-btn--danger:hover {
+.pts-btn--error:hover {
     background: var(--th-error-light);
 }
 
@@ -1016,4 +1016,71 @@
 .pts-tabs-carousel .pts-tab {
     white-space: nowrap;
     min-width: fit-content;
+}
+
+/* ==========================================================================
+   14. TOGGLE BUTTONS (.pts-toggle)
+   ========================================================================== */
+.pts-toggle {
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    gap: 10px;
+    font-family: var(--th-font);
+    user-select: none;
+}
+
+.pts-toggle-track {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    background: var(--th-bg-light); /* Cor de fundo "desligado" */
+    border-radius: 12px;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+    border: 1px solid var(--th-text-muted);
+}
+
+.pts-toggle-icon {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    color: var(--th-text-muted);
+    transform: translateX(20px); 
+    transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1), color 0.3s ease;
+}
+
+.pts-toggle.active .pts-toggle-icon {
+    transform: translateX(2px);
+    color: #fff;
+}
+
+.pts-toggle-thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 18px;
+    height: 18px;
+    background: var(--th-bg);
+    border-radius: 50%;
+    transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* Estado Ativado */
+.pts-toggle.active .pts-toggle-track {
+    background: var(--th-primary);
+    border-color: var(--th-primary-dark);
+}
+
+.pts-toggle.active .pts-toggle-thumb {
+    transform: translateX(20px);
+}
+
+.pts-toggle:hover .pts-toggle-track {
+    filter: brightness(0.95);
 }
