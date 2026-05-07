@@ -36,13 +36,14 @@ class ConfiguracoesGUI {
     _criarPainel() {
         this.panel = this.ui.createPanel({
             title: "Configurações Globais P0NT4S",
-            compact: false,
+            compact: true,
             persist: true,
+            draggable: false,
             width: "320px"
         }).mount();
 
-        // Posiciona no canto inferior direito, perto do FAB
-        this.panel.setPosition(window.innerWidth - 350, window.innerHeight - 300);
+        // Posiciona no canto inferior esquerdo
+        this.panel.setPosition(0, window.innerHeight - 270);
 
         const content = document.createElement('div');
         content.style.display = 'flex';
