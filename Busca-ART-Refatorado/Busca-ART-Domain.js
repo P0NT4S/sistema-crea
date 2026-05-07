@@ -446,13 +446,41 @@ class ConsultaEmpresaCnae extends IFiltroBusca {
     construirQueryParams() { return new URLSearchParams(); }
 
     async processarPagina() {
-        // Execução paralela das consultas
-        const [dataCrea, dataCnae] = await Promise.all([
-            this._CommBridge.apiART.buscarCorporativo('cpf_cnpj', this.cnpj),
-            this._CommBridge.apiPublica.consultarCnpj(this.cnpj)
-        ]);
+        // Busca CREA Corporativo
+        let dataCrea = {};
+        try {
+            dataCrea = await this._CommBridge.apiART.buscarCorporativo('cpf_cnpj', this.cnpj);
+        } catch (e) {
+            console.warn("[ConsultaEmpresaCnae] Falha ao buscar no portal corporativo", e);
+        }
+
+        // Retry BrasilAPI 3 vezes
+        let dataCnae = null;
+        for (let i = 1; i <= 3; i++) {
+            try {
+                const res = await this._CommBridge.apiPublica.consultarCnpj(this.cnpj);
+                if (res && res.error) {
+                    throw new Error(res.message || "Erro retornado pela BrasilAPI");
+                }
+                dataCnae = res;
+                break;
+            } catch (e) {
+                if (i === 3) {
+                    console.warn(`[ConsultaEmpresaCnae] BrasilAPI falhou após 3 tentativas.`, e);
+                } else {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+            }
+        }
 
         const registroCrea = dataCrea.resultados && dataCrea.resultados.length > 0 ? dataCrea.resultados[0] : null;
+
+        if (!dataCnae && !registroCrea) {
+            throw new Error("Não foi possível localizar dados da empresa na BrasilAPI nem no CREA.");
+        }
+
+        const razaoSocialFallback = (dataCnae && dataCnae.razao_social) || (registroCrea && registroCrea.nome) || 'Razão Social não identificada';
+        const nomeFantasiaFallback = (dataCnae && dataCnae.nome_fantasia) || '';
 
         return {
             metadados: { totalPaginas: 1, totalOcorrencias: 1, artsNaPagina: 1 },
@@ -460,12 +488,12 @@ class ConsultaEmpresaCnae extends IFiltroBusca {
                 id: 'cnae-result',
                 isCnaeCard: true,
                 cnpj: this.cnpj,
-                razaoSocial: dataCnae.razao_social,
-                nomeFantasia: dataCnae.nome_fantasia,
+                razaoSocial: razaoSocialFallback,
+                nomeFantasia: nomeFantasiaFallback,
                 crea: registroCrea ? { registro: registroCrea.registro, situacao: registroCrea.situacao } : null,
                 cnaes: {
-                    principal: { cod: dataCnae.cnae_fiscal, desc: dataCnae.cnae_fiscal_descricao },
-                    secundarios: dataCnae.cnaes_secundarios || []
+                    principal: dataCnae && dataCnae.cnae_fiscal ? { cod: dataCnae.cnae_fiscal, desc: dataCnae.cnae_fiscal_descricao } : null,
+                    secundarios: dataCnae ? (dataCnae.cnaes_secundarios || []) : []
                 }
             }]
         };

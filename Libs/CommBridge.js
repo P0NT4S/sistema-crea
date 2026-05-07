@@ -331,7 +331,9 @@ class PublicAPI {
      * @param {string} cnpj - CNPJ apenas números.
      */
     async consultarCnpj(cnpj) {
-        const url = `https://brasilapi.com.br/api/cnpj/v1/${cnpj}`;
+        // A BrasilAPI exige CNPJ apenas numérico (sem pontos, barras ou hifens)
+        const cnpjLimpo = cnpj.replace(/\D/g, '');
+        const url = `https://brasilapi.com.br/api/cnpj/v1/${cnpjLimpo}`;
         try {
             const res = await this.bridge.apiART.fetchAsync(url);
             return JSON.parse(res.responseText);

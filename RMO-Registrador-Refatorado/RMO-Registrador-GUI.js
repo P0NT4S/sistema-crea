@@ -106,7 +106,7 @@ class PainelRegistroRmo {
 
         this._painel = new Panel(this._ui.core, {
             id: PainelRegistroRmo.PAINEL_ID,
-            title: `${IconSet.get('FLOPPY', { color: 'currentColor', fill: true, size: '16px' })} Registrar RMO`,
+            title: `${IconSet.get('SALVAR', { color: 'currentColor', fill: true, size: '45px' })} Registrar RMO`,
             width: '400px',
             persist: true,  // O painel sobrevive ao fechar (hide), não é destruído
             closeButton: true,

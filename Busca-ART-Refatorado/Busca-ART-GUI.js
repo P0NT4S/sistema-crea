@@ -720,7 +720,9 @@ class PainelBuscaControle {
     atualizarStatusBusca(msg, tipo) {
         if (!this._conteinerResultados) return;
 
-        this._conteinerResultados.querySelectorAll('.pts-status-box').forEach(el => el.remove());
+        // Segue o padrão do legado: só remove boxes transitórios (loading, warning).
+        // Os de 'success' persistem como cabeçalhos de bloco entre páginas de resultados.
+        this._conteinerResultados.querySelectorAll('.pts-status-box--loading, .pts-status-box--warning').forEach(el => el.remove());
         if (!msg) return;
 
         let msgFinal = msg;
@@ -730,12 +732,16 @@ class PainelBuscaControle {
         const variantFinal = tipo === 'loading' ? 'loading' : tipo;
         const statusBoxObj = this._uiFacade.createStatusBox(this._conteinerResultados, msgFinal, variantFinal);
 
-        // Uso Seguro e Nativo do DOM sem depender de métodos sujos como 'afterbegin' pro mount OOP
-        this._conteinerResultados.insertBefore(statusBoxObj.getNode(), this._conteinerResultados.firstChild);
-
-        if (this._resultados.length > 0) {
-            const statusBoxBottom = this._uiFacade.createStatusBox(this._conteinerResultados, msgFinal, tipo);
-            this._conteinerResultados.appendChild(statusBoxBottom.getNode());
+        if (tipo === 'loading') {
+            // Loading vai no topo e no fundo (se já houver cards) para visibilidade
+            this._conteinerResultados.insertBefore(statusBoxObj.getNode(), this._conteinerResultados.firstChild);
+            if (this._resultados.length > 0) {
+                const statusBoxBottom = this._uiFacade.createStatusBox(this._conteinerResultados, msgFinal, variantFinal);
+                this._conteinerResultados.appendChild(statusBoxBottom.getNode());
+            }
+        } else {
+            // Status de resultado (success, error, etc.) sempre é appendado no final, antes do próximo bloco de cards
+            this._conteinerResultados.appendChild(statusBoxObj.getNode());
         }
     }
 
@@ -837,12 +843,19 @@ class CnaeCardResultado {
         principalTitle.innerText = "CNAE Principal";
         cnaeSection.appendChild(principalTitle);
 
-        const principalDesc = document.createElement('div');
-        principalDesc.style.cssText = 'font-size: 13px; margin-bottom: 10px; color: var(--th-text);';
-        principalDesc.innerText = this._dados.cnaes.principal.desc; // Apenas descrição
-        cnaeSection.appendChild(principalDesc);
+        if (this._dados.cnaes && this._dados.cnaes.principal) {
+            const principalDesc = document.createElement('div');
+            principalDesc.style.cssText = 'font-size: 13px; margin-bottom: 10px; color: var(--th-text);';
+            principalDesc.innerText = this._dados.cnaes.principal.desc; // Apenas descrição
+            cnaeSection.appendChild(principalDesc);
+        } else {
+            const principalDesc = document.createElement('div');
+            principalDesc.style.cssText = 'font-size: 13px; margin-bottom: 10px; color: var(--th-text-muted); font-style: italic;';
+            principalDesc.innerText = "Informações de CNAE indisponíveis (Falha na BrasilAPI).";
+            cnaeSection.appendChild(principalDesc);
+        }
 
-        if (this._dados.cnaes.secundarios.length > 0) {
+        if (this._dados.cnaes && this._dados.cnaes.secundarios && this._dados.cnaes.secundarios.length > 0) {
             const secundarioTitle = document.createElement('div');
             secundarioTitle.style.cssText = 'font-weight: bold; font-size: 11px; color: var(--th-text-light); text-transform: uppercase; margin-bottom: 4px;';
             secundarioTitle.innerText = "CNAEs Secundários";
