@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         UIFactory (OOP Components)
 // @namespace    https://github.com/P0NT4S/
-// @version      7.0.3
+// @version      7.1.0
 // @description  Biblioteca UI e Design System estruturada em Classes ES6+.
 // @author       P0nt4s
 // ==/UserScript==
@@ -554,10 +554,24 @@ class IconButton extends ButtonBase {
 }
 
 class FabButton extends ButtonBase {
-    constructor(core, icon, onClick, hoverText = "Ação") {
+    /**
+     * @param {object} core - Instância de CoreUtils.
+     * @param {string} icon - HTML do ícone SVG.
+     * @param {Function} onClick - Callback de clique.
+     * @param {string} [hoverText="Ação"] - Texto do tooltip.
+     * @param {number} [ordem=0] - Posição vertical do FAB. Valores maiores sobem mais na tela.
+     *                             Fórmula: bottom = 20 + (ordem * 60)px.
+     * @example
+     *   // FAB na posição mais baixa (padrão)
+     *   ui.createFab(icone, callback, 'Salvar', 0);
+     *   // FAB acima do primeiro
+     *   ui.createFab(icone, callback, 'Exportar', 1);
+     */
+    constructor(core, icon, onClick, hoverText = "Ação", ordem = 0) {
         super(core, document.body, 'pts-btn-fab', 'pts-btn-fab', 'primary', onClick, false, hoverText);
+        this.ordem = ordem;
         this.setIcon(icon);
-        this._calculateOffset();
+        this._aplicarPosicao();
     }
 
     setIcon(icon) {
@@ -565,10 +579,15 @@ class FabButton extends ButtonBase {
         this.el.innerHTML = this.icon;
     }
 
-    _calculateOffset() {
-        const existing = document.querySelectorAll('.pts-btn-fab');
-        this.offsetPosition = 20 + (existing.length * 60);
-        this.el.style.bottom = `${this.offsetPosition}px`;
+    /**
+     * Calcula e aplica o offset vertical com base na `ordem` explícita.
+     * Maior ordem → posição mais alta (maior valor de `bottom`).
+     * @private
+     */
+    _aplicarPosicao() {
+        // Base de 20px garante que o FAB nunca cole na borda inferior;
+        // cada nível de ordem adiciona 60px (tamanho do botão + gap).
+        this.el.style.bottom = `${20 + (this.ordem * 60)}px`;
     }
 }
 
@@ -1165,7 +1184,14 @@ class UIFacade {
     createCard(parent, config) { return new Card(this.core, parent, config); }
     createButton(parent, text, variant, onClick, triggerOnEnter = false) { return new Button(this.core, parent, text, variant, onClick, false, triggerOnEnter); }
     createIconButton(parent, icon, onClick, hover, isInline, triggerOnEnter = false) { return new IconButton(this.core, parent, icon, onClick, hover, isInline, triggerOnEnter); }
-    createFab(icon, onClick, hover) { return new FabButton(this.core, icon, onClick, hover); }
+    /**
+     * Cria um Floating Action Button com posição vertical definida por `ordem`.
+     * @param {string} icon - HTML do ícone SVG.
+     * @param {Function} onClick - Callback de clique.
+     * @param {string} hover - Texto do tooltip.
+     * @param {number} [ordem=0] - Posição vertical. Maior valor = mais alto.
+     */
+    createFab(icon, onClick, hover, ordem = 0) { return new FabButton(this.core, icon, onClick, hover, ordem); }
     createBadge(parent, text, variant, appearance) { return new Badge(this.core, parent, text, variant, appearance); }
     createStatusBox(parent, text, variant) { return new StatusBox(this.core, parent, text, variant); }
     createTable(parent, headers, rows, isCompact) { return new Table(this.core, parent, headers, rows, isCompact); }

@@ -94,22 +94,22 @@ class ConteinerFormulariosBusca {
         `;
 
         this.btnSearch = this._uiFacade.createButton(
-            null, 
-            `${this._uiFacade.icons.get('SEARCH')} Pesquisar`, 
-            'primary', 
+            null,
+            `${this._uiFacade.icons.get('SEARCH')} Pesquisar`,
+            'primary',
             () => {
                 const formAtivo = this._formularios.find(f => f.getModoID() === this._modoAtivo);
                 this._callbacks.onSearch(this._modoAtivo, formAtivo.getValores());
-            }, 
+            },
             true // Gatilho de ENTER Ativado!
         );
         this.btnSearch.el.id = 'art-btn-search';
         this.btnSearch.el.style.flex = "1";
 
         this.btnCancel = this._uiFacade.createButton(
-            null, 
-            `${this._uiFacade.icons.get('BAN')} Parar Busca`, 
-            'error', 
+            null,
+            `${this._uiFacade.icons.get('BAN')} Parar Busca`,
+            'error',
             () => this._callbacks.onCancel(),
             false
         );
@@ -731,11 +731,13 @@ class PainelBuscaControle {
             () => {
                 if (typeof onToggle === 'function') onToggle(this.foiConstruido());
             },
-            "Painel de pesquisa"
+            "Painel de pesquisa",
+            1  // Mais alto: Busca é o painel principal de trabalho
         );
         fab.el.style.background = 'var(--th-info)';
         fab.mount();
     }
+
 
     foiConstruido() {
         return this._painelBusca !== null && document.getElementById('caca-art-painel') !== null;

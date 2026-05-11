@@ -151,13 +151,14 @@ class PainelRegistroRmo {
      * @param {Function} onToggle Callback chamado quando o botão for clicado.
      */
     criarBotaoFab(onToggle) {
-        const icon = this._ui.icons.get('FLOPPY', { size: '20px' });
+        const icon = this._ui.icons.get('FLOPPY', { size: '24px' });
         const fab = this._ui.createFab(
             icon,
             () => {
                 if (typeof onToggle === 'function') onToggle(this.foiConstruido);
             },
-            'Registrar / Editar RMO'
+            'Registrar / Editar RMO',
+            2  // Posição intermediária entre Configurações (0) e Busca (2)
         );
         fab.el.style.background = 'var(--th-success)';
         fab.mount();

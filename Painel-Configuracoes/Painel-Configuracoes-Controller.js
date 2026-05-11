@@ -1,14 +1,15 @@
 class ConfiguracoesController {
     constructor(deps) {
-        this.utils = deps.Utils;
-        this.ui = deps.UIFactory;
-        
+        this.utils      = deps.Utils;
+        this.ui         = deps.UIFactory;
+        this.creaHelper = deps.creaHelper || null;
+
         this.service = new ConfiguracoesService(this.utils);
         this.gui = null; // Instanciado no inicializar()
     }
 
     inicializar() {
-        this.gui = new ConfiguracoesGUI(this.ui, this);
+        this.gui = new ConfiguracoesGUI(this.ui, this, this.creaHelper);
         
         // Aplica e propaga as configurações logo ao iniciar (fonte da verdade)
         this._aplicarLocalmenteEPropagar();

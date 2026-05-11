@@ -31,7 +31,7 @@ class BuscaARTController {
     inicializar() {
         // Instancia o controlador visual precocemente apenas para renderizar o FAB
         this._painelUI = this._uiFactory.criarPainelControleBase(this);
-        
+
         this._painelUI.criarBotaoFab(async (foiConstruido) => {
             if (!foiConstruido) {
                 const autoData = await this._extrairDadosContextuaisCasoExistaRmoAberto();
@@ -63,7 +63,7 @@ class BuscaARTController {
 
             // B. Declarar o limite da paginação assíncrona (Ex: Processar 5 requisições de uma vez)
             const pagInicial = parseInt(dadosForm.pagina, 10) || 1;
-            const PICS_LIMITE = 5; 
+            const PICS_LIMITE = 5;
             this._estadoAtualBusca = new EstadoPaginacao(pagInicial, PICS_LIMITE);
 
             // C. Injetar a estratégia e o limite no motor e acelerar!
@@ -81,12 +81,12 @@ class BuscaARTController {
     handleInterromperBusca() {
         if (this._estadoAtualBusca) {
             // A. Sinaliza ao motor para parar na próxima oportunidade
-            this._estadoAtualBusca.abortar(); 
-            
+            this._estadoAtualBusca.abortar();
+
             // B. Libera a UI imediatamente para o usuário
             this._painelUI.atualizarStatusBusca("Busca interrompida pelo usuário.", "error");
             this._painelUI.bloquearInputs(false);
-            
+
             // C. Limpa referências para evitar vazamento de lógica
             this._estrategiaAtual = null;
         }
@@ -102,7 +102,7 @@ class BuscaARTController {
             this._painelUI.bloquearInputs(tipo === 'loading');
             this._painelUI.atualizarStatusBusca(mensagem, tipo);
         };
-        
+
         this._motorServico.onResultadosEncontrados = (resultadosTratados) => {
             if (this._estadoAtualBusca?.isCancelado) return;
             if (this._painelUI) {
@@ -153,7 +153,7 @@ class BuscaARTController {
             this._estadoAtualBusca.paginaLimite = (this._estadoAtualBusca.paginaAtual + 5) - 1; // Expande limite pra mais ciclo
             this._motorServico.iniciarAssincrono(this._estrategiaAtual, this._estadoAtualBusca, await this._extrairRmoAtiva());
         };
-        
+
         c.appendChild(btn);
     }
 
@@ -161,33 +161,33 @@ class BuscaARTController {
         // Tenta buscar no Angular State Engine primariamente
         const dadosGerais = await this._creaHelper.rmo.getDadosRmo('geral');
         if (dadosGerais && dadosGerais.numero) return String(dadosGerais.numero);
-        
+
         // Fallback: Tenta ler o state do Angular pelo Hash Router (Ionic navigation)
         try {
             const match = window.location.hash.match(/rmo(?:\/|-novo\/)(\d+)/);
             if (match) return match[1];
-        } catch(e) {}
-        
+        } catch (e) { }
+
         return "";
     }
 
     async _extrairDadosContextuaisCasoExistaRmoAberto() {
         // O getDadosRmo agora possui retry interno de 10s via CreaHelper
         const endData = await this._creaHelper.rmo.getDadosRmo('endereco');
-        
+
         if (endData && endData.endereco) {
             const strNums = `${endData.endereco} ${endData.numeroEnd || ''} ${endData.complemento || ''}`;
             const nums = strNums.match(/\d+/g);
-            return { 
-                logradouro: endData.endereco || "", 
-                bairro: "", 
-                numeros: nums ? [...new Set(nums)].join(", ") : "" 
+            return {
+                logradouro: endData.endereco || "",
+                bairro: "",
+                numeros: nums ? [...new Set(nums)].join(", ") : ""
             };
         }
 
         // Fallback: Varredura de DOM bruto legada, caso Angular não engate form.
         const g = n => { const e = document.querySelector(`input[formcontrolname="${n}"]`); return e ? e.value : ""; };
         const nums = (`${g('endereco')} ${g('numeroEnd')} ${g('complemento')}`).match(/\d+/g);
-        return { logradouro: g('endereco')||"", bairro:"", numeros: nums?[...new Set(nums)].join(", "):"" };
+        return { logradouro: g('endereco') || "", bairro: "", numeros: nums ? [...new Set(nums)].join(", ") : "" };
     }
 }

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Communication Bridge (HTTP API & ART - OOP)
 // @namespace    https://github.com/P0NT4S/
-// @version      5.0.0
+// @version      5.2.0
 // @description  Camada de comunicação refatorada para Classes ES6 (Padrão SaaS). Integração limpa e Injeção de Dependência nativa.
 // @author       P0nt4s
 // @grant        GM_xmlhttpRequest
@@ -220,6 +220,134 @@ class CreaAPI {
             }
         };
     }
+
+    // =========================================================================
+    // GERENCIAMENTO DE SESSÃO (ART e Corporativo)
+    // =========================================================================
+
+    /**
+     * Verifica se a sessão no portal de ARTs está ativa.
+     * Faz um GET na área protegida e inspeciona a URL final após redirecionamentos.
+     * @returns {Promise<boolean>}
+     */
+    verificarSessaoArt() {
+        return new Promise((resolve) => {
+            GM_xmlhttpRequest({
+                method: 'GET',
+                url: 'https://art.creadf.org.br/art1025/publico/consultas.php',
+                headers: { 'Referer': 'https://art.creadf.org.br/' },
+                onload: (r) => {
+                    const ativa = !r.finalUrl.includes('login');
+                    this.bridge.log.info('CreaAPI', `Sessão ART: ${ativa ? 'ATIVA' : 'INATIVA'} (→ ${r.finalUrl})`);
+                    resolve(ativa);
+                },
+                onerror: () => resolve(false)
+            });
+        });
+    }
+
+    /**
+     * Autentica no portal de ARTs via HTTP POST direto ao endpoint de autenticação.
+     * @param {string} usuario
+     * @param {string} senha
+     * @returns {Promise<boolean>} true se o login foi bem-sucedido.
+     */
+    logarArt(usuario, senha) {
+        const payload = [
+            `username=${encodeURIComponent(usuario)}`,
+            `password=${encodeURIComponent(senha)}`,
+            `action=%2Fart1025%2Fpublico%2Fconsultas.php`
+        ].join('&');
+
+        return new Promise((resolve) => {
+            GM_xmlhttpRequest({
+                method: 'POST',
+                url: 'https://art.creadf.org.br/auth/authenticate.php',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Referer': 'https://art.creadf.org.br/login.php'
+                },
+                data: payload,
+                onload: (r) => {
+                    const sucesso = !r.finalUrl.includes('login');
+                    this.bridge.log.info('CreaAPI', `Login ART: ${sucesso ? 'SUCESSO' : 'FALHOU'} (→ ${r.finalUrl})`);
+                    resolve(sucesso);
+                },
+                onerror: () => resolve(false)
+            });
+        });
+    }
+
+    /**
+     * Verifica se a sessão no portal Corporativo está ativa.
+     * Inspeciona a URL final e a presença do link de logout na resposta.
+     * @returns {Promise<boolean>}
+     */
+    verificarSessaoCorp() {
+        return new Promise((resolve) => {
+            GM_xmlhttpRequest({
+                method: 'GET',
+                url: 'https://corp.creadf.org.br/pessoa',
+                onload: (r) => {
+                    // Logado = não foi redirecionado pro login E a página contém o link de logout
+                    const ativa = !r.finalUrl.includes('login') && r.responseText.includes('logout');
+                    this.bridge.log.info('CreaAPI', `Sessão Corporativo: ${ativa ? 'ATIVA' : 'INATIVA'}`);
+                    resolve(ativa);
+                },
+                onerror: () => resolve(false)
+            });
+        });
+    }
+
+    /**
+     * Autentica no portal Corporativo.
+     * Passo 1: GET na página de login para extrair o token CSRF (campo _token).
+     * Passo 2: POST ao endpoint /autentica com o token e as credenciais.
+     * @param {string} usuario
+     * @param {string} senha
+     * @returns {Promise<boolean>} true se o login foi bem-sucedido.
+     */
+    async logarCorp(usuario, senha) {
+        // O CSRF token muda a cada carregamento da página de login — precisa ser extraído em tempo real
+        let token;
+        try {
+            const paginaLogin = await this.fetchText('https://corp.creadf.org.br/login');
+            const match = paginaLogin.match(/name="_token"\s+value="([^"]+)"/);
+            if (!match) {
+                this.bridge.log.error('CreaAPI', 'Token CSRF não encontrado na página de login do Corporativo.');
+                return false;
+            }
+            token = match[1];
+        } catch (e) {
+            this.bridge.log.error('CreaAPI', 'Falha ao buscar token CSRF do Corporativo.', e);
+            return false;
+        }
+
+        const payload = [
+            `_token=${encodeURIComponent(token)}`,
+            `sistema=CORP`,
+            `username=${encodeURIComponent(usuario)}`,
+            `password=${encodeURIComponent(senha)}`
+        ].join('&');
+
+        return new Promise((resolve) => {
+            GM_xmlhttpRequest({
+                method: 'POST',
+                url: 'https://corp.creadf.org.br/autentica',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Referer': 'https://corp.creadf.org.br/login'
+                },
+                data: payload,
+                onload: (r) => {
+                    const sucesso = !r.finalUrl.includes('login');
+                    this.bridge.log.info('CreaAPI', `Login Corporativo: ${sucesso ? 'SUCESSO' : 'FALHOU'} (→ ${r.finalUrl})`);
+                    resolve(sucesso);
+                },
+                onerror: () => resolve(false)
+            });
+        });
+    }
 }
 
 /**
@@ -355,6 +483,120 @@ class PublicAPI {
 }
 
 /**
+ * @class Login
+ * @description Gerencia a rotina de autenticação em páginas do CREA que exigem login
+ * antes de permitir buscas ou requisições. Opera diretamente sobre o DOM da página
+ * hospedeira, por isso os seletores são configuráveis para se adaptar a diferentes
+ * estruturas de formulário.
+ *
+ * @example
+ *   const login = bridge.criarLogin({
+ *     seletorCampoLogin: '#usuario',
+ *     seletorCampoSenha: '#senha',
+ *     seletorBotaoSubmit: 'button.btn-entrar',
+ *     aguardarMsAposLogin: 3000
+ *   });
+ *   await login.logarComCredenciais('meu_usuario', 'minha_senha');
+ */
+class Login {
+    /**
+     * @param {CommBridge} bridge - Instância do CommBridge (para acesso ao sistema de log).
+     * @param {object} [config={}] - Configurações dos seletores e comportamento.
+     * @param {string} [config.seletorCampoLogin='input[type="text"]'] - Seletor CSS do campo de usuário.
+     * @param {string} [config.seletorCampoSenha='input[type="password"]'] - Seletor CSS do campo de senha.
+     * @param {string} [config.seletorBotaoSubmit='button[type="submit"]'] - Seletor CSS do botão de envio.
+     * @param {number} [config.aguardarMsAposLogin=2000] - Tempo de espera (ms) após o clique no botão,
+     *                                                     para aguardar redirecionamento ou resposta da SPA.
+     */
+    constructor(bridge, config = {}) {
+        this.bridge = bridge;
+
+        // Centraliza os seletores configurando defaults razoáveis como fallback
+        this.config = {
+            seletorCampoLogin:   config.seletorCampoLogin  || 'input[type="text"]',
+            seletorCampoSenha:   config.seletorCampoSenha  || 'input[type="password"]',
+            seletorBotaoSubmit:  config.seletorBotaoSubmit || 'button[type="submit"]',
+            aguardarMsAposLogin: config.aguardarMsAposLogin ?? 2000
+        };
+    }
+
+    /**
+     * Submete o formulário de login usando as credenciais já preenchidas
+     * pelo mecanismo de autopreenchimento do próprio navegador.
+     * Útil quando o browser já salvou as credenciais e as injeta automaticamente
+     * ao carregar a página — o script apenas aciona o botão de submit.
+     *
+     * @returns {Promise<void>} Resolve após o tempo configurado em `aguardarMsAposLogin`.
+     * @throws {Error} Se o botão de submit não for encontrado.
+     */
+    async logarComAutopreenchimento() {
+        const botao = document.querySelector(this.config.seletorBotaoSubmit);
+        if (!botao) {
+            throw new Error(`[Login] Botão de submit não encontrado com seletor: "${this.config.seletorBotaoSubmit}"`);
+        }
+
+        this.bridge.log.info('Login', 'Submetendo formulário via autopreenchimento do navegador...');
+        botao.click();
+        await this._aguardar(this.config.aguardarMsAposLogin);
+    }
+
+    /**
+     * Preenche os campos de login e senha programaticamente e submete o formulário.
+     * Dispara eventos nativos (`input`, `change`) para garantir compatibilidade com
+     * frameworks reativos como Ionic/Angular que ignoram atribuição direta de `.value`.
+     *
+     * @param {string} login - Identificador do usuário (CPF, matrícula, e-mail, etc.).
+     * @param {string} senha - Senha do usuário.
+     * @returns {Promise<void>} Resolve após o tempo configurado em `aguardarMsAposLogin`.
+     * @throws {Error} Se qualquer um dos elementos do formulário não for encontrado.
+     */
+    async logarComCredenciais(login, senha) {
+        const campoLogin = document.querySelector(this.config.seletorCampoLogin);
+        const campoSenha = document.querySelector(this.config.seletorCampoSenha);
+        const botao      = document.querySelector(this.config.seletorBotaoSubmit);
+
+        if (!campoLogin) throw new Error(`[Login] Campo de login não encontrado: "${this.config.seletorCampoLogin}"`);
+        if (!campoSenha) throw new Error(`[Login] Campo de senha não encontrado: "${this.config.seletorCampoSenha}"`);
+        if (!botao)      throw new Error(`[Login] Botão de submit não encontrado: "${this.config.seletorBotaoSubmit}"`);
+
+        this._preencherCampo(campoLogin, login);
+        this._preencherCampo(campoSenha, senha);
+
+        this.bridge.log.info('Login', 'Credenciais injetadas. Submetendo formulário...');
+        botao.click();
+        await this._aguardar(this.config.aguardarMsAposLogin);
+    }
+
+    /**
+     * Preenche um campo de input simulando interação real do usuário.
+     * Usa o setter nativo do HTMLInputElement para forçar o reconhecimento
+     * pelo modelo de dados do framework (Angular/Ionic não reagem a `.value = x`).
+     *
+     * @private
+     * @param {HTMLInputElement} campo - O elemento input a ser preenchido.
+     * @param {string} valor - O valor a ser inserido.
+     */
+    _preencherCampo(campo, valor) {
+        // A atribuição direta de `.value` não dispara o ciclo de detecção de mudanças
+        // do Angular/Ionic. O setter nativo + disparo de eventos resolve isso.
+        const setterNativo = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+        setterNativo.call(campo, valor);
+        campo.dispatchEvent(new Event('input',  { bubbles: true }));
+        campo.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    /**
+     * Aguarda um intervalo de tempo antes de continuar o fluxo.
+     * @private
+     * @param {number} ms - Milissegundos a aguardar.
+     * @returns {Promise<void>}
+     */
+    _aguardar(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+}
+
+/**
  * @class CommBridge
  * @description O Ponto de Entrada (Facade) da camada de rede.
  * Instancia os submódulos de comunicação (CREA e Backend Local) injetando as dependências.
@@ -401,5 +643,21 @@ class CommBridge {
      */
     get urlBaseArt() {
         return this.config.MODO_TESTE ? this.config.URLS_ART.TESTE : this.config.URLS_ART.PRODUCAO;
+    }
+
+    /**
+     * Factory method que instancia e retorna uma rotina de Login configurada para a página atual.
+     * @param {object} [config={}] - Seletores e comportamento. Veja a classe `Login` para detalhes.
+     * @param {string} [config.seletorCampoLogin] - Seletor CSS do campo de usuário.
+     * @param {string} [config.seletorCampoSenha] - Seletor CSS do campo de senha.
+     * @param {string} [config.seletorBotaoSubmit] - Seletor CSS do botão de envio.
+     * @param {number} [config.aguardarMsAposLogin] - Tempo de espera (ms) após o submit.
+     * @returns {Login}
+     * @example
+     *   const login = bridge.criarLogin({ seletorCampoLogin: '#cpf', seletorBotaoSubmit: '.btn-ok' });
+     *   await login.logarComCredenciais('00000000000', 'senha123');
+     */
+    criarLogin(config = {}) {
+        return new Login(this, config);
     }
 }

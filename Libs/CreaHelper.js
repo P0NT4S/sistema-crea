@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CreaHelper (Domain & Facade)
 // @namespace    https://github.com/P0NT4S/
-// @version      8.0.0
+// @version      8.1.0
 // @description  Lógica de domínio específica do CREA-DF estruturada em Classes ES6+.
 // @author       P0nt4s
 // ==/UserScript==
@@ -780,6 +780,196 @@ class CorpPortal {
 }
 
 /**
+ * @class GerenciadorSessao
+ * @description Submódulo do CreaHelper responsável por verificar e manter
+ * as sessões ativas nos portais CREA (ART e Corporativo).
+ *
+ * Quando as credenciais não estão salvas, dispara o evento `P0NT4S_SolicitarCredenciais`
+ * e aguarda a resposta da UI de configurações (`P0NT4S_CredenciaisDefinidas`).
+ *
+ * @example
+ *   const ok = await creaHelper.sessao.garantirSessoes();
+ *   if (!ok) console.warn('Portais sem autenticação.');
+ */
+class GerenciadorSessao {
+    /* Chaves usadas no storage do Tampermonkey (escopo do userscript). */
+    static CHAVE_USUARIO = 'pts_crea_usuario';
+    static CHAVE_SENHA   = 'pts_crea_senha';
+
+    /**
+     * @param {CoreUtils}   coreUtils  - Instância do núcleo de utilitários.
+     * @param {CommBridge}  commBridge - Instância da bridge de comunicação HTTP.
+     */
+    constructor(coreUtils, commBridge) {
+        this.core    = coreUtils;
+        this._bridge = commBridge;
+    }
+
+    // =========================================================================
+    // API PÚBLICA
+    // =========================================================================
+
+    /**
+     * Verifica o estado das sessões nos dois portais em paralelo.
+     * @returns {Promise<{ art: boolean, corp: boolean }>}
+     */
+    async verificarSessoes() {
+        const [art, corp] = await Promise.all([
+            this._bridge.apiART.verificarSessaoArt(),
+            this._bridge.apiART.verificarSessaoCorp()
+        ]);
+        return { art, corp };
+    }
+
+    /**
+     * Ponto de entrada principal. Verifica as sessões e, se necessário, tenta
+     * autenticar usando credenciais salvas. Se falhar, solicita novas ao usuário.
+     * @returns {Promise<boolean>} `true` se todas as sessões estiverem ativas ao final.
+     */
+    async garantirSessoes() {
+        // Bloqueia múltiplas chamadas simultâneas (ex: múltiplos scripts chamando ao mesmo tempo)
+        if (this._promiseGarantir) return this._promiseGarantir;
+        this._promiseGarantir = this._executarGarantirSessoes();
+        try {
+            return await this._promiseGarantir;
+        } finally {
+            this._promiseGarantir = null;
+        }
+    }
+
+    async _executarGarantirSessoes() {
+        this.core.log.info('GerenciadorSessao', 'Verificando sessões nos portais CREA...');
+
+        let sessoes = await this.verificarSessoes();
+        if (sessoes.art && sessoes.corp) {
+            this.core.log.success('GerenciadorSessao', 'Sessões ART e Corporativo ativas.');
+            return true;
+        }
+
+        let { usuario, senha } = this.recuperarCredenciais();
+
+        // 1. Tenta logar automaticamente se houver credenciais salvas
+        if (usuario && senha) {
+            this.core.log.info('GerenciadorSessao', 'Tentando login automático...');
+            const sucesso = await this._logarOndeNecessario(sessoes.art, sessoes.corp, usuario, senha);
+            if (sucesso) return true;
+            
+            // Se falhou parcialmente, re-verifica quais ainda estão pendentes
+            sessoes = await this.verificarSessoes();
+            if (sessoes.art && sessoes.corp) return true;
+        }
+
+        // 2. Se não tinha credenciais ou o login automático falhou, solicita via painel
+        const creds = await this._solicitarCredenciaisViaEvento();
+        if (!creds) {
+            this.core.log.warning('GerenciadorSessao', 'Login cancelado pelo usuário.');
+            return false;
+        }
+        
+        usuario = creds.usuario;
+        senha   = creds.senha;
+        if (creds.salvar) this.salvarCredenciais(usuario, senha);
+
+        return await this._logarOndeNecessario(sessoes.art, sessoes.corp, usuario, senha);
+    }
+
+    /**
+     * Recupera as credenciais persistidas no storage do Tampermonkey.
+     * @returns {{ usuario: string, senha: string }}
+     */
+    recuperarCredenciais() {
+        if (typeof GM_getValue === 'undefined') return { usuario: '', senha: '' };
+        return {
+            usuario: GM_getValue(GerenciadorSessao.CHAVE_USUARIO, ''),
+            senha:   GM_getValue(GerenciadorSessao.CHAVE_SENHA,   '')
+        };
+    }
+
+    /**
+     * Persiste as credenciais no storage do Tampermonkey.
+     * @param {string} usuario
+     * @param {string} senha
+     */
+    salvarCredenciais(usuario, senha) {
+        if (typeof GM_setValue === 'undefined') return;
+        GM_setValue(GerenciadorSessao.CHAVE_USUARIO, usuario);
+        GM_setValue(GerenciadorSessao.CHAVE_SENHA,   senha);
+        this.core.log.info('GerenciadorSessao', 'Credenciais salvas no storage.');
+    }
+
+    /**
+     * Remove as credenciais do storage (usado quando o login falha).
+     */
+    limparCredenciais() {
+        if (typeof GM_setValue === 'undefined') return;
+        GM_setValue(GerenciadorSessao.CHAVE_USUARIO, '');
+        GM_setValue(GerenciadorSessao.CHAVE_SENHA,   '');
+        this.core.log.warning('GerenciadorSessao', 'Credenciais removidas do storage.');
+    }
+
+    // =========================================================================
+    // MÉTODOS PRIVADOS
+    // =========================================================================
+
+    /**
+     * Tenta autenticar nos portais que ainda estiverem inativos.
+     * Em caso de falha total, limpa as credenciais armazenadas.
+     * @private
+     */
+    async _logarOndeNecessario(artAtiva, corpAtiva, usuario, senha) {
+        const tentativas = await Promise.allSettled([
+            artAtiva  ? Promise.resolve(true) : this._bridge.apiART.logarArt(usuario, senha),
+            corpAtiva ? Promise.resolve(true) : this._bridge.apiART.logarCorp(usuario, senha)
+        ]);
+
+        const artOk  = tentativas[0].value === true;
+        const corpOk = tentativas[1].value === true;
+
+        if (artOk && corpOk) {
+            this.core.log.success('GerenciadorSessao', 'Login realizado com sucesso nos portais do CREA.');
+            return true;
+        }
+
+        const falhas = [...(!artOk ? ['ART'] : []), ...(!corpOk ? ['Corporativo'] : [])];
+        this.core.log.error('GerenciadorSessao', `Falha ao fazer login em: ${falhas.join(', ')}.`);
+        // Limpa para forçar nova solicitação na próxima execução
+        this.limparCredenciais();
+        return false;
+    }
+
+    /**
+     * Dispara o evento `P0NT4S_SolicitarCredenciais` e aguarda a resposta da UI
+     * (evento `P0NT4S_CredenciaisDefinidas`) ou cancelamento (`P0NT4S_CredenciaisCanceladas`).
+     * O ConfigPanel escuta o primeiro evento e resolve com o segundo.
+     * @private
+     * @returns {Promise<{ usuario: string, senha: string, salvar: boolean }|null>}
+     */
+    _solicitarCredenciaisViaEvento() {
+        return new Promise((resolve) => {
+            const aoDefinir = (e) => {
+                limpar();
+                resolve(e.detail);
+            };
+            const aoCancelar = () => {
+                limpar();
+                resolve(null);
+            };
+            const limpar = () => {
+                window.removeEventListener('P0NT4S_CredenciaisDefinidas',   aoDefinir);
+                window.removeEventListener('P0NT4S_CredenciaisCanceladas', aoCancelar);
+            };
+
+            window.addEventListener('P0NT4S_CredenciaisDefinidas',   aoDefinir,   { once: true });
+            window.addEventListener('P0NT4S_CredenciaisCanceladas', aoCancelar, { once: true });
+
+            window.dispatchEvent(new CustomEvent('P0NT4S_SolicitarCredenciais', {
+                detail: { motivo: 'Sessão inativa nos portais CREA.' }
+            }));
+        });
+    }
+}
+
+/**
  * @class CreaHelper
  * @description Facade (Fachada) do Domínio do CREA.
  * Fornece o ponto de entrada principal para os scripts finais, ocultando 
@@ -788,16 +978,20 @@ class CorpPortal {
 class CreaHelper {
     /**
      * Inicializa a suíte de ferramentas do CREA.
-     * @param {CoreUtils} coreUtils - É OBRIGATÓRIO passar a instância do núcleo genérico.
+     * @param {CoreUtils}  coreUtils  - OBRIGATÓRIO. Instância do núcleo genérico.
+     * @param {CommBridge} [commBridge=null] - Opcional. Necessário para operações de sessão (login HTTP).
      */
-    constructor(coreUtils) {
+    constructor(coreUtils, commBridge = null) {
         if (!coreUtils) throw new Error("[CreaHelper] Erro Fatal: Necessita de uma instância de CoreUtils para funcionar.");
-        
-        this.core = coreUtils; 
-        
-        // Instancia os submódulos passando o core (para que eles tenham log/texto)
+
+        this.core = coreUtils;
+
+        // Submódulos de domínio
         this.parser = new ArtParser(coreUtils);
-        this.rmo = new RmoInterceptor(coreUtils);
-        this.corp = new CorpPortal(coreUtils);
+        this.rmo    = new RmoInterceptor(coreUtils);
+        this.corp   = new CorpPortal(coreUtils);
+
+        // Submódulo de sessão — só disponível quando commBridge é fornecida
+        this.sessao = commBridge ? new GerenciadorSessao(coreUtils, commBridge) : null;
     }
 }
