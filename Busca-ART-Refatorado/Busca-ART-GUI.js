@@ -321,9 +321,10 @@ class AbaDetalheResponsaveis extends AbaDetalheBase {
             this._uiFacade.icons.get('PERSON_FILL_ADD', { color: 'var(--th-primary)' }),
             () => this._inserirNovoEnvolvido('Profissional', {
                 nome: this._dados.responsavel.nome,
+                registro: this._dados.responsavel.registro,
                 cpfCnpj: this._utilsCore.text.apenasNumeros(this._dados.responsavel.registro),
                 titulo_profissional: this._dados.responsavel.titulo || ''
-            }, 'nome'),
+            }, 'registro', 'nome'),
             'Adicionar Profissional como Envolvido',
             true
         );
@@ -351,8 +352,9 @@ class AbaDetalheResponsaveis extends AbaDetalheBase {
                 this._uiFacade.icons.get('BUILDING_ADD', { color: 'var(--th-primary)' }),
                 () => this._inserirNovoEnvolvido('Empresa', {
                     nome: this._dados.responsavel.empresaContratada.nome,
+                    registro: regEmpLimpo,
                     cpfCnpj: regEmpLimpo  // Registro limpo (só números) para pesquisa no CREA
-                }, 'registro'),
+                }, 'registro', 'nome'),
                 'Adicionar Empresa como Envolvida',
                 true
             );
@@ -402,9 +404,9 @@ class AbaDetalheResponsaveis extends AbaDetalheBase {
      * e as observações com as atividades técnicas automaticamente.
      * @param {string} tipo - Label amigável ('Profissional' ou 'Empresa') para o toast de feedback.
      * @param {Object} dadosBasicos - Dados do envolvido (nome, cpfCnpj, titulo_profissional).
-     * @param {string} [buscarPor='nome'] - Campo que dispara a busca na API interna do CREA.
+     * @param {string} [buscarPor=null] - Campo que dispara a busca na API interna do CREA.
      */
-    _inserirNovoEnvolvido(tipo, dadosBasicos, buscarPor = 'nome') {
+    _inserirNovoEnvolvido(tipo, dadosBasicos, buscarPor = null, fallbackBusca = null) {
         const artNumLimpo = this._utilsCore.text.apenasNumeros(this._dadosART.artNum || '');
 
         const payloadCompleto = {
@@ -414,7 +416,7 @@ class AbaDetalheResponsaveis extends AbaDetalheBase {
             observacoes: this._gerarObsAtividades()
         };
 
-        const sucesso = this._conexaoRMO.adicionarEnvolvido(payloadCompleto, buscarPor);
+        const sucesso = this._conexaoRMO.adicionarEnvolvido(payloadCompleto, buscarPor, fallbackBusca);
         if (sucesso) this._uiFacade.toast(`Envolvido (${tipo}) adicionado.`, 'success');
         else this._uiFacade.toast(`Falha ao injetar ${tipo}.`, 'error');
     }
@@ -542,8 +544,17 @@ class CardResultado {
         const rootContent = document.createElement('div');
 
         // 1. Label Proprietário/Contratante
-        const propLabel = this._dadosART.contratanteName ? "Contratante" : "Proprietário";
-        const propValue = this._dadosART.contratanteName || this._dadosART.owner || "N/A";
+        const propLabel = this._dadosART.tipoEndereco === "contrato" || this._dadosART.tipoEndereco === "contratante" ? "Contratante" : "Proprietário";
+        
+        let propValue = this._dadosART.contratanteName || this._dadosART.owner;
+        if (!propValue || propValue === "N/A") {
+            if (this._dadosART.cacheDetalhes && this._dadosART.cacheDetalhes.obra && this._dadosART.cacheDetalhes.obra.proprietario) {
+                propValue = this._dadosART.cacheDetalhes.obra.proprietario;
+            } else {
+                propValue = "N/A";
+            }
+        }
+
         const kvNode1 = this._uiFacade.createKeyValue(null, propLabel, propValue);
         rootContent.appendChild(kvNode1.getNode());
 
@@ -566,11 +577,27 @@ class CardResultado {
         const rowDiv = document.createElement('div');
         rowDiv.style.cssText = "margin-top: 8px; border-top: 1px solid rgba(128,128,128,0.25); display: flex; align-items: flex-start; padding-top: 8px; gap: 8px;";
         const isBuscaContrato = this._dadosART.extraInfo === 'Campo Contrato' || this._dadosART.extraInfo === 'Campo Observações' || (this._dadosART.address && (this._dadosART.address.startsWith("Contrato") || this._dadosART.address.startsWith("Obs:")));
-        const iconName = isBuscaContrato ? 'FILE_EARMARK_TEXT' : 'SIGNPOST_FILL';
+        let iconName = 'SIGNPOST_FILL';
+        if (isBuscaContrato) {
+            iconName = 'FILE_EARMARK_TEXT';
+        } else if (this._dadosART.tipoEndereco === "contratante") {
+            iconName = 'PERSON_VCARD';
+        }
+
+        let addressValue = this._dadosART.address;
+        if (!addressValue || addressValue === "N/A") {
+            if (this._dadosART.cacheDetalhes && this._dadosART.cacheDetalhes.obra && this._dadosART.cacheDetalhes.obra.endereco) {
+                const e = this._dadosART.cacheDetalhes.obra.endereco;
+                const partes = [e.logradouro, e.numero, e.complemento, e.bairro].filter(p => p && p.trim() !== "");
+                addressValue = partes.join(", ") + (e.cidade ? `, ${e.cidade}-${e.uf}` : "");
+            } else {
+                addressValue = "N/A";
+            }
+        }
 
         rowDiv.innerHTML = `
             <span style="flex-shrink: 0; margin-top: 3px;">${this._uiFacade.icons.get(iconName, { color: 'var(--th-success)' })}</span>
-            <span style="font-size: 13px; color: var(--th-text-light); line-height: 1.4; flex: 1;">${this._dadosART.address || "N/A"}</span>
+            <span style="font-size: 13px; color: var(--th-text-light); line-height: 1.4; flex: 1;">${addressValue}</span>
         `;
         rootContent.appendChild(rowDiv);
 

@@ -116,6 +116,7 @@ class FiltroPorEndereco extends FiltroGeralBase {
                         artNum: art.numeroART,
                         owner: art.proprietario,
                         address: this._Utils.text.applyHighlight(art.endereco, this.regexList, 'pts-highlight pts-highlight--success'),
+                        tipoEndereco: art.tipoEndereco,
                         dataRegistro: art.dataRegistro,
                         docFormatado: detalhes.contrato.documento || detalhes.obra.documento,
                         docLimpo: detalhes.contrato.documentoLimpo || detalhes.obra.documentoLimpo,
@@ -129,6 +130,7 @@ class FiltroPorEndereco extends FiltroGeralBase {
                         artNum: art.numeroART,
                         owner: art.proprietario,
                         address: this._Utils.text.applyHighlight(art.endereco, this.regexList, 'pts-highlight pts-highlight--success'),
+                        tipoEndereco: art.tipoEndereco,
                         dataRegistro: art.dataRegistro
                     });
                 }
@@ -218,6 +220,7 @@ class FiltroPorContrato extends FiltroGeralBase {
                         url: rmoIdAtual ? `${art.urlImpressao}&rmo_id=${rmoIdAtual}` : art.urlImpressao,
                         contratanteName: detalhes.contrato.contratante || art.proprietario,
                         address: formattedAddress, extraInfo: checkResult.foundText,
+                        tipoEndereco: art.tipoEndereco,
                         dataRegistro: art.dataRegistro,
                         docFormatado: detalhes.contrato.documento || detalhes.obra.documento,
                         docLimpo: detalhes.contrato.documentoLimpo || detalhes.obra.documentoLimpo,
@@ -281,6 +284,7 @@ class FiltroPorDocumento extends FiltroGeralBase {
                         artNum: art.numeroART,
                         owner: art.proprietario,
                         address: this._Utils.text.applyHighlight(art.endereco, this.regexEnderecos, 'pts-highlight pts-highlight--success'),
+                        tipoEndereco: art.tipoEndereco,
                         dataRegistro: art.dataRegistro,
                         docFormatado: detalhes.contrato.documento || detalhes.obra.documento,
                         docLimpo: detalhes.contrato.documentoLimpo || detalhes.obra.documentoLimpo,
@@ -293,6 +297,7 @@ class FiltroPorDocumento extends FiltroGeralBase {
                         artNum: art.numeroART,
                         owner: art.proprietario,
                         address: this._Utils.text.applyHighlight(art.endereco, this.regexEnderecos, 'pts-highlight pts-highlight--success'),
+                        tipoEndereco: art.tipoEndereco,
                         dataRegistro: art.dataRegistro
                     });
                 }
@@ -379,6 +384,7 @@ class FiltroPorProfissional extends FiltroGeralBase {
                         artNum: art.numeroART,
                         owner: art.proprietario,
                         address: this._Utils.text.applyHighlight(art.endereco, this.regexEnderecos, 'pts-highlight pts-highlight--success'),
+                        tipoEndereco: art.tipoEndereco,
                         dataRegistro: art.dataRegistro,
                         docFormatado: detalhes.contrato.documento || detalhes.obra.documento,
                         docLimpo: detalhes.contrato.documentoLimpo || detalhes.obra.documentoLimpo,
@@ -391,6 +397,7 @@ class FiltroPorProfissional extends FiltroGeralBase {
                         artNum: art.numeroART,
                         owner: art.proprietario,
                         address: this._Utils.text.applyHighlight(art.endereco, this.regexEnderecos, 'pts-highlight pts-highlight--success'),
+                        tipoEndereco: art.tipoEndereco,
                         dataRegistro: art.dataRegistro
                     });
                 }

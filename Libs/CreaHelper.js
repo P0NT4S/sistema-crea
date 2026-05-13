@@ -122,19 +122,29 @@ class ArtParser {
                 if (!linkImpressao) return;
 
                 const profRaw = tbl.rows[0].cells[2]?.textContent.trim() || "N/A";
-                let proprietario = "N/A", endereco = "N/A";
+                let proprietario = "N/A", endereco = "N/A", tipoEndereco = "obra";
                 
                 // Varre a tabela procurando a célula de "Endereço da Obra" que contém dados do proprietário e do endereço
                 const celulas = Array.from(tbl.querySelectorAll('td'));
                 const celulaObra = celulas.find(td => td.textContent.includes("Endereço da Obra/Serviço:"));
+                const celulaContratante = celulas.find(td => td.textContent.includes("Endereço do Contratante:"));
                 
-                if (celulaObra) {
+                let celulaAlvo = celulaObra;
+                let termoDivisor = "Endereço da Obra/Serviço:";
+
+                if (!celulaAlvo && celulaContratante) {
+                    celulaAlvo = celulaContratante;
+                    tipoEndereco = "contratante";
+                    termoDivisor = "Endereço do Contratante:";
+                }
+                
+                if (celulaAlvo) {
                     // O CREA sempre coloca o nome do proprietário dentro de um <b> nesta mesma célula
-                    const tagB = celulaObra.querySelector('b');
+                    const tagB = celulaAlvo.querySelector('b');
                     if (tagB) proprietario = tagB.textContent.trim();
 
                     // Corta o texto exatamente onde começa o endereço
-                    const partes = celulaObra.textContent.split("Endereço da Obra/Serviço:");
+                    const partes = celulaAlvo.textContent.split(termoDivisor);
                     if (partes.length > 1) endereco = partes[1].trim();
                 }
 
@@ -148,6 +158,7 @@ class ArtParser {
                     profissional: this._parseProfissional(profRaw),
                     proprietario: proprietario,
                     endereco: endereco,
+                    tipoEndereco: tipoEndereco,
                     dataRegistro: tbl.rows[0].cells[3]?.textContent.trim() || "",
                     situacao: tbl.rows[0].cells[4]?.textContent.trim() || "N/A"
                 });
@@ -650,7 +661,7 @@ class RmoInterceptor {
      * @param {string} [buscarPor=null] - Dado que ativa a API interna (ex: registro para profissionais).
      * @returns {boolean}
      */
-    adicionarEnvolvido(dadosEnvolvido = null, buscarPor = null) {
+    adicionarEnvolvido(dadosEnvolvido = null, buscarPor = null, fallbackBusca = null) {
         const inst = this.conectar();
         if (!inst) return false;
 
@@ -680,8 +691,19 @@ class RmoInterceptor {
                     // 3. Simula a "lupa" (busca na API) automaticamente
                     if (buscarPor && typeof inst.buscarEntidade === 'function') {
                         // Delay necessário para dar tempo ao DOM de processar o input
-                        setTimeout(() => {
-                            inst.buscarEntidade({ tipo: 'envolvido', busca: buscarPor, index: novoIndice });
+                        setTimeout(async () => {
+                            try {
+                                const res = await inst.buscarEntidade({ tipo: 'envolvido', busca: buscarPor, index: novoIndice });
+                                if (res === false && fallbackBusca) {
+                                    this.core.log.warning("RmoInterceptor", `Busca por '${buscarPor}' retornou false, tentando fallback...`);
+                                    inst.buscarEntidade({ tipo: 'envolvido', busca: fallbackBusca, index: novoIndice });
+                                }
+                            } catch (e) {
+                                if (fallbackBusca) {
+                                    this.core.log.warning("RmoInterceptor", `Busca por '${buscarPor}' falhou, tentando fallback...`);
+                                    inst.buscarEntidade({ tipo: 'envolvido', busca: fallbackBusca, index: novoIndice });
+                                }
+                            }
                         }, 100);
                     }
 
