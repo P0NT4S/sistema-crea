@@ -193,11 +193,31 @@ class FiltroPorContrato extends FiltroGeralBase {
                 const checkResult = this._Utils.crea.parser.checkContractDeep(detalhes, this.anoContrato, this.regexContrato);
 
                 if (checkResult.match) {
+                    let formattedAddress = "Contrato validado internamente.";
+                    if (checkResult.foundText === "Campo Contrato") {
+                        formattedAddress = `Contrato: ${detalhes.contrato.numeroContrato}`;
+                    } else if (checkResult.foundText === "Campo Observações") {
+                        let obs = detalhes.observacoes || "";
+                        const indexAno = obs.indexOf(this.anoContrato);
+                        let snippet = obs;
+                        if (indexAno !== -1) {
+                            const start = Math.max(0, indexAno - 30);
+                            const end = Math.min(obs.length, indexAno + 50);
+                            snippet = obs.substring(start, end);
+                            if (start > 0) snippet = "..." + snippet;
+                            if (end < obs.length) snippet = snippet + "...";
+                        } else if (obs.length > 80) {
+                            snippet = obs.substring(0, 80) + "...";
+                        }
+                        const highlighted = this._Utils.text.applyHighlight(snippet, [this.regexContrato, new RegExp(this.anoContrato, 'g')], 'pts-highlight pts-highlight--success');
+                        formattedAddress = `Obs: ${highlighted}`;
+                    }
+
                     matches.push({
                         id: Date.now() + i, artNum: art.numeroART, owner: art.proprietario,
                         url: rmoIdAtual ? `${art.urlImpressao}&rmo_id=${rmoIdAtual}` : art.urlImpressao,
                         contratanteName: detalhes.contrato.contratante || art.proprietario,
-                        address: "Contrato validado internamente.", extraInfo: checkResult.foundText,
+                        address: formattedAddress, extraInfo: checkResult.foundText,
                         dataRegistro: art.dataRegistro,
                         docFormatado: detalhes.contrato.documento || detalhes.obra.documento,
                         docLimpo: detalhes.contrato.documentoLimpo || detalhes.obra.documentoLimpo,
@@ -318,9 +338,15 @@ class FiltroPorProfissional extends FiltroGeralBase {
             // Passo C: Raspagem em Background
             const htmlCorp = await this._CommBridge.apiART.fetchText(linkCorp);
             const linkArt = this._Utils.crea.corp.extrairLinkArt(htmlCorp);
+            const perfilDetalhado = this._Utils.crea.corp.extrairPerfil(htmlCorp);
             if (!linkArt) throw new Error("Acesso à página de ARTs não disponível no portal corporativo deste registro.");
 
             this._urlArtListBase = linkArt;
+            this._perfilCorporativo = { ...jsonCorp.resultados[0], ...perfilDetalhado };
+            
+            if (typeof this.onPerfilEncontrado === 'function') {
+                this.onPerfilEncontrado(this._perfilCorporativo);
+            }
         }
 
         // Passo D: Continuação com a URL base extraída + paginação

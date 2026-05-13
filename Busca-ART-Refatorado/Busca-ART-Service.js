@@ -20,6 +20,7 @@ class VarredorDeArtsService {
         this.onResultadosEncontrados = (resultadosTratados) => {};
         this.onPausadoParaContinuar = (estadoPaginacao) => {};
         this.onFimDaBusca = (mensagem) => {};
+        this.onPerfilEncontrado = (perfil) => {};
     }
 
     /**

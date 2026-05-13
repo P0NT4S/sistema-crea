@@ -44,9 +44,15 @@ class PainelCredenciais {
             title: `${icone} Login nos Portais CREA`,
             width: '340px',
             persist: true,
-            draggable: true,
-            closeButton: false  // Força o usuário a escolher: Entrar ou Pular
+            draggable: false,
+            closeButton: true
         });
+
+        // Intercepta o botão fechar para resolver a Promise e permitir que o script continue
+        const btnFechar = this._painel.titleNode.querySelector('.pts-close-btn');
+        if (btnFechar) {
+            btnFechar.onclick = () => this._cancelar(resolve);
+        }
 
         const corpo = document.createElement('div');
         corpo.style.cssText = 'display: flex; flex-direction: column; gap: 12px; padding: 4px 0;';
@@ -66,16 +72,14 @@ class PainelCredenciais {
         this._toggleSalvar.mount();
 
         const areaBotoes = document.createElement('div');
-        areaBotoes.style.cssText = 'display: flex; gap: 10px; margin-top: 4px;';
+        areaBotoes.style.cssText = 'display: flex; justify-content: center; margin-top: 8px;';
 
         const iconEntrar = this._ui.icons.get('PERSON_BADGE', { color: 'currentColor' });
         const btnEntrar = this._ui.createButton(null, `${iconEntrar} Entrar`, 'success', () => this._confirmar(resolve));
-        btnEntrar.el.style.flex = '2';
+        
+        // Botão maior (padding), centralizado no painel, mas com os textos (ícone+Entrar) à esquerda (flex-start)
+        btnEntrar.el.style.cssText = 'padding: 12px 24px; min-width: 65%; display: flex; justify-content: flex-start; align-items: center; gap: 10px; font-size: 14px;';
         btnEntrar.mount(areaBotoes);
-
-        const btnPular = this._ui.createButton(null, 'Pular', 'ghost', () => this._cancelar(resolve));
-        btnPular.el.style.flex = '1';
-        btnPular.mount(areaBotoes);
 
         corpo.appendChild(areaBotoes);
 
@@ -148,7 +152,9 @@ class ConfiguracoesGUI {
 
         this._criarBotaoFab();
 
-
+        // Verifica a sessão na inicialização para tentar o login automático em background.
+        // Se falhar e precisar de credenciais, o `garantirSessoes()` dispara o evento que abrirá a janela.
+        this._verificarSessaoNaInicializacao();
     }
 
     // =========================================================================
@@ -267,7 +273,8 @@ class ConfiguracoesGUI {
     _criarSecaoLogin() {
         const secao = document.createElement('div');
         secao.id = 'pts-secao-login';
-        secao.style.cssText = 'display: flex; flex-direction: column; gap: 8px; padding-top: 8px; border-top: 1px solid var(--th-bg-light);';
+        // border-top removido pois o último switchRow já tem border-bottom
+        secao.style.cssText = 'display: flex; flex-direction: column; gap: 8px; padding-top: 8px;';
 
         const tituloRow = document.createElement('div');
         tituloRow.style.cssText = 'display: flex; justify-content: space-between; align-items: center;';
@@ -369,6 +376,18 @@ class ConfiguracoesGUI {
     // =========================================================================
     // SYNC DE ESTADO
     // =========================================================================
+
+    /**
+     * Tenta garantir a sessão silenciosamente no carregamento.
+     * @private
+     */
+    async _verificarSessaoNaInicializacao() {
+        if (!this.creaHelper?.sessao) return;
+        // Aguarda a interface carregar para não sobrescrever alertas
+        await new Promise(r => setTimeout(r, 1000));
+        await this.creaHelper.sessao.garantirSessoes();
+        this._atualizarInfoUsuario();
+    }
 
     _syncSwitches(config) {
         if (this.switches.tema) this.switches.tema.setValue(config.tema === 'dark');

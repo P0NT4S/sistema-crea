@@ -50,11 +50,19 @@ class BuscaARTController {
         try {
             // A. Padrão Factory: Fabricar dinamicamente a Estratégia requerida pela tela
             let dependenciasDomain = { Utils: this._Utils, CommBridge: this._CommBridge };
-
             if (modo === 'address') this._estrategiaAtual = new FiltroPorEndereco(dadosForm, dependenciasDomain);
             else if (modo === 'contract') this._estrategiaAtual = new FiltroPorContrato(dadosForm, dependenciasDomain);
             else if (modo === 'document') this._estrategiaAtual = new FiltroPorDocumento(dadosForm, dependenciasDomain);
-            else if (modo === 'professional') this._estrategiaAtual = new FiltroPorProfissional(dadosForm, dependenciasDomain);
+            else if (modo === 'professional') {
+                this._estrategiaAtual = new FiltroPorProfissional(dadosForm, dependenciasDomain);
+                // A estratégia notifica imediatamente o Controller assim que descobrir o Perfil (antes mesmo da varredura começar)
+                this._estrategiaAtual.onPerfilEncontrado = (perfil) => {
+                    if (this._estadoAtualBusca?.isCancelado) return;
+                    if (this._painelUI && typeof this._painelUI.renderizarPerfilCorporativo === 'function') {
+                        this._painelUI.renderizarPerfilCorporativo(perfil);
+                    }
+                };
+            }
             else if (modo === 'direct') this._estrategiaAtual = new FiltroPorNumeroART(dadosForm, dependenciasDomain);
             else if (modo === 'cnae') this._estrategiaAtual = new ConsultaEmpresaCnae(dadosForm, dependenciasDomain);
             else throw new Error("Aba de busca não configurada.");
@@ -106,11 +114,34 @@ class BuscaARTController {
         this._motorServico.onResultadosEncontrados = (resultadosTratados) => {
             if (this._estadoAtualBusca?.isCancelado) return;
             if (this._painelUI) {
-                const cardsProntos = resultadosTratados.map(dados => this._uiFactory.fabricarCardResultado(dados));
+                const cardsProntos = resultadosTratados.map(dados => {
+                    // Decide se é um CardResultado normal ou um CnaeCardResultado
+                    if (dados.isCnaeCard) {
+                        return new CnaeCardResultado(dados, { uiFacade: this._UI });
+                    }
+                    return this._uiFactory.fabricarCardResultado(dados);
+                });
+                
                 this._painelUI.renderizarResultadosProntos(cardsProntos);
-                this._UI.toast(`${resultadosTratados.length} ART(s) compatível(is) encontrada(s)!`, 'success', 0);
+                
+                // Determinar mensagem de sucesso baseada na aba ativa
+                let msg = `${resultadosTratados.length} ART(s) compatível(is) encontrada(s)!`;
+                const modoAtivo = this._painelUI._painelBusca._modoAtivo; // Acessar o modo atual (um pouco acoplado, mas funciona)
+                
+                if (modoAtivo === 'direct') {
+                    msg = "ART processada e detalhada com sucesso!";
+                } else if (modoAtivo === 'cnae') {
+                    msg = "Consulta concluída! Dados da empresa e CNAEs listados.";
+                } else if (modoAtivo === 'professional') {
+                    msg = `${resultadosTratados.length} ART(s) associada(s) encontrada(s)!`;
+                }
+
+                // Disparar toast não-persistente (15 segundos)
+                this._UI.toast(msg, 'success', 15000);
             }
         };
+
+
 
         this._motorServico.onPausadoParaContinuar = (estadoPaginacaoAtual) => {
             if (this._estadoAtualBusca?.isCancelado) return;

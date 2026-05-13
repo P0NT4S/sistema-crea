@@ -374,12 +374,32 @@ class ArtParser {
 
         /**
          * Lógica interna de checagem.
-         * Quebra o texto ao redor do 'ano' e testa se a regex existe nos arredores.
+         * Encontra o 'ano', verifica se não é uma data e se a regex casa num range de proximidade.
          */
         const checkLogic = (txt) => {
             if (!txt || !txt.includes(ano)) return false;
-            const cl = txt.split(ano).join(" ");
-            return regex.test(cl);
+            
+            let pos = -1;
+            while ((pos = txt.indexOf(ano, pos + 1)) !== -1) {
+                // Checar se não é uma data completa (ex: 25/11/2024). Se for só "11/2024", pode ser o contrato 11 e deve ser avaliado.
+                const preText = txt.substring(Math.max(0, pos - 10), pos);
+                if (/(^|[^0-9])[0-9]{1,2}\/[0-9]{1,2}\/$/.test(preText)) {
+                    continue; // Ignora, pois é uma data com dia e mês (DD/MM/)
+                }
+                
+                // Define um range de proximidade máximo (50 caracteres antes e depois)
+                const start = Math.max(0, pos - 50);
+                const end = Math.min(txt.length, pos + ano.length + 50);
+                
+                // Recorta o bloco substituindo o ano para não dar falso positivo com ele mesmo
+                const chunk = txt.substring(start, end);
+                const cl = chunk.replace(ano, ' ');
+                
+                if (regex.test(cl)) {
+                    return true;
+                }
+            }
+            return false;
         };
 
         if (checkLogic(t1)) return { match: true, foundText: "Campo Contrato" };
@@ -412,7 +432,7 @@ class RmoInterceptor {
             geral: ['id', 'numero', 'solicitacao', 'dataCadastro', 'tipoFiscalizacao', 'modalidades', 'impedimento', 'situacao', 'fase', 'dataInicio', 'rmo_rota', 'rmo_atividade', 'fis_id', 'pon_numero', 'dataEnvio', 'fiscal', 'titulo_profissional'],
             endereco: ['endereco', 'cep', 'numeroEnd', 'complemento', 'cidade', 'uf', 'ra', 'latitude', 'longitude'],
             proprietario: ['proprietarioCorpLink', 'proprietario', 'cpfCnpjNaoLocalizado', 'cpfCnpj', 'bloqueio_ident', 'desbloqueio_end', 'fone', 'email', 'endereco_proprietario_cep', 'endereco_proprietario', 'endereco_proprietario_numero', 'endereco_proprietario_complemento', 'endereco_proprietario_cidade', 'endereco_proprietario_uf'],
-            outros: ['quantitativos', 'semNaoConformidades', 'naoConformidades', 'observacoes', 'declarante']
+            outros: ['quantitativos', 'semNaoConformidades', 'naoConformidades', 'observacoes', 'declarante', 'contrato']
         };
     }
 
@@ -774,6 +794,129 @@ class CorpPortal {
             return null;
         } catch (e) {
             this.core.log.error("CorpPortal", "Erro ao extrair link de ART do portal corporativo.", e);
+            return null;
+        }
+    }
+
+    /**
+     * Extrai os dados detalhados do perfil na página do corporativo.
+     * @param {string} html - HTML da página do portal corporativo.
+     * @returns {Object|null} Objeto com os dados do perfil ou null se falhar.
+     */
+    extrairPerfil(html) {
+        try {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            const perfil = {
+                tipo: "Desconhecido",
+                nome: "N/A",
+                carteira: "N/A",
+                registro: "N/A",
+                rnp: "N/A",
+                titulo: "N/A",
+                cpf: "N/A",
+                cnpj: "N/A",
+                situacao: "N/A",
+                infracoes: "N/A"
+            };
+
+            // Detecta se é empresa pela presença do input de CNPJ
+            const cnpjInput = doc.getElementById('cnpj');
+            if (cnpjInput) {
+                perfil.tipo = "Empresa";
+                const cnpjValue = cnpjInput.getAttribute('value');
+                perfil.cnpj = cnpjValue ? cnpjValue.trim() : "N/A";
+                
+                const razaoInput = doc.getElementById('razao_social');
+                const razaoValue = razaoInput ? razaoInput.getAttribute('value') : null;
+                if (razaoValue) {
+                    perfil.nome = razaoValue.trim();
+                } else {
+                    // Fallback para Empresa sem input de razao_social
+                    const h5Elements = doc.querySelectorAll('h5');
+                    for (let h5 of h5Elements) {
+                        const texto = h5.textContent.trim();
+                        if (texto && !texto.includes('Situação:') && !texto.includes('Definitivo Nº')) {
+                            perfil.nome = texto;
+                            break;
+                        }
+                    }
+                }
+
+                const h5Elements = doc.querySelectorAll('h5');
+                for (let h5 of h5Elements) {
+                    const texto = h5.textContent;
+                    if (texto.includes('Definitivo Nº')) {
+                        const regMatch = texto.match(/Definitivo Nº\s*(\d+)/i);
+                        if (regMatch) perfil.registro = regMatch[1].trim();
+                        // Tentar obter a data também se necessário
+                    } else if (texto.includes('Situação:')) {
+                        perfil.situacao = texto.replace('Situação:', '').trim();
+                    }
+                }
+            } else {
+                perfil.tipo = "Profissional";
+                // Extrair Nome, Carteira e RNP do cabeçalho
+                const h5Elements = doc.querySelectorAll('h5');
+                for (let h5 of h5Elements) {
+                    const texto = h5.textContent;
+                    if (texto.includes('Nome:')) {
+                        const nomeMatch = texto.match(/Nome:\s*(.+?)(?=\s*-|\n|$)/i);
+                        if (nomeMatch) perfil.nome = nomeMatch[1].trim();
+
+                        const carteiraMatch = texto.match(/Carteira:\s*(.+?)(?=\s*- RNP|\n|$)/i);
+                        if (carteiraMatch) perfil.carteira = carteiraMatch[1].trim();
+
+                        const rnpMatch = texto.match(/RNP:\s*(\S+)/i);
+                        if (rnpMatch) perfil.rnp = rnpMatch[1].trim();
+                        break;
+                    }
+                }
+
+                // Extrair Título
+                for (let h5 of h5Elements) {
+                    const texto = h5.textContent;
+                    if (texto.includes('Título:')) {
+                        perfil.titulo = texto.replace('Título:', '').replace(',', '').trim();
+                        break;
+                    }
+                }
+
+                // Extrair Situação
+                const h6Elements = doc.querySelectorAll('h6');
+                for (let h6 of h6Elements) {
+                    const texto = h6.textContent;
+                    if (texto.includes('Situação:')) {
+                        const span = h6.querySelector('span');
+                        if (span) {
+                            perfil.situacao = span.textContent.trim();
+                        } else {
+                            perfil.situacao = texto.replace('Situação:', '').trim();
+                        }
+                        break;
+                    }
+                }
+
+                // Extrair CPF do link ART
+                const linkArt = doc.querySelector('a[href*="cpf_prof="]');
+                if (linkArt) {
+                    const cpfMatch = linkArt.getAttribute('href').match(/cpf_prof=([^&]+)/);
+                    if (cpfMatch) {
+                        perfil.cpf = cpfMatch[1].trim();
+                    }
+                }
+            }
+
+            // Extrair Infrações (comum)
+            const spanInfracoes = doc.querySelector('#situacao-multa-profissional');
+            if (spanInfracoes) {
+                perfil.infracoes = spanInfracoes.textContent.trim();
+            }
+
+            return perfil;
+        } catch (e) {
+            this.core.log.error("CorpPortal", "Erro ao extrair perfil do portal corporativo.", e);
             return null;
         }
     }

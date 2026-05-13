@@ -565,8 +565,11 @@ class CardResultado {
         // 3. Endereço e Botão de Detalhes
         const rowDiv = document.createElement('div');
         rowDiv.style.cssText = "margin-top: 8px; border-top: 1px solid rgba(128,128,128,0.25); display: flex; align-items: flex-start; padding-top: 8px; gap: 8px;";
+        const isBuscaContrato = this._dadosART.extraInfo === 'Campo Contrato' || this._dadosART.extraInfo === 'Campo Observações' || (this._dadosART.address && (this._dadosART.address.startsWith("Contrato") || this._dadosART.address.startsWith("Obs:")));
+        const iconName = isBuscaContrato ? 'FILE_EARMARK_TEXT' : 'SIGNPOST_FILL';
+
         rowDiv.innerHTML = `
-            <span style="flex-shrink: 0; margin-top: 3px;">${this._uiFacade.icons.get('SIGNPOST_FILL', { color: 'var(--th-success)' })}</span>
+            <span style="flex-shrink: 0; margin-top: 3px;">${this._uiFacade.icons.get(iconName, { color: 'var(--th-success)' })}</span>
             <span style="font-size: 13px; color: var(--th-text-light); line-height: 1.4; flex: 1;">${this._dadosART.address || "N/A"}</span>
         `;
         rootContent.appendChild(rowDiv);
@@ -819,6 +822,21 @@ class PainelBuscaControle {
         });
     }
 
+    renderizarPerfilCorporativo(perfil) {
+        if (!this._conteinerResultados) return;
+
+        const quadro = new QuadroPerfilCorporativo(perfil, { uiFacade: this._uiFacade });
+        const cont = quadro.render();
+
+        const firstCard = this._conteinerResultados.querySelector('.pts-card:not(.perfil-corporativo-header)');
+
+        if (firstCard) {
+            this._conteinerResultados.insertBefore(cont, firstCard);
+        } else {
+            this._conteinerResultados.appendChild(cont);
+        }
+    }
+
     limparResultados() {
         this._resultados = [];
         if (this._conteinerResultados) this._conteinerResultados.innerHTML = '';
@@ -954,5 +972,67 @@ class CnaeCardResultado {
         });
 
         return cardObj.getNode();
+    }
+}
+
+/**
+ * @class QuadroPerfilCorporativo
+ * @description Classe dedicada a montar o layout de apresentação do Perfil Corporativo (Empresa ou Profissional).
+ */
+class QuadroPerfilCorporativo {
+    constructor(perfil, dependencias) {
+        this._perfil = perfil;
+        this._uiFacade = dependencias.uiFacade;
+    }
+
+    render() {
+        const cont = document.createElement('div');
+        cont.className = 'perfil-corporativo-header';
+        cont.style.cssText = 'background: rgba(128,128,128,0.05); padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px solid rgba(128,128,128,0.2);';
+
+        // Linha 1 (Nome)
+        const headerRow = document.createElement('div');
+        headerRow.style.cssText = 'font-weight: bold; color: var(--th-text-bright); font-size: 15px; margin-bottom: 8px; border-bottom: 1px solid rgba(128,128,128,0.1); padding-bottom: 6px; display: flex; align-items: center; gap: 8px;';
+
+        const isEmpresa = this._perfil.tipo === 'Empresa';
+        const iconName = isEmpresa ? 'SUITCASE_LG' : 'PERSON_BADGE';
+        headerRow.innerHTML = `${this._uiFacade.icons.get(iconName, { color: 'var(--th-primary)' })} ${this._perfil.nome || 'N/A'}`;
+        cont.appendChild(headerRow);
+
+        // Linha 2 (Atributos - KeyValue com UIFactory)
+        const kvContainer = document.createElement('div');
+        kvContainer.style.cssText = 'display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 8px; align-items: center;';
+
+        const docFormatado = isEmpresa ? (this._perfil.cnpj || 'N/A') : (this._perfil.cpf || 'N/A');
+        const regFormatado = isEmpresa ? (this._perfil.registro || 'N/A') : (this._perfil.carteira && this._perfil.carteira !== 'N/A' ? this._perfil.carteira : this._perfil.registro || 'N/A');
+
+        this._uiFacade.createKeyValue(kvContainer, isEmpresa ? 'CNPJ' : 'CPF', docFormatado).mount();
+        this._uiFacade.createKeyValue(kvContainer, isEmpresa ? 'Registro' : 'Carteira', regFormatado).mount();
+
+        if (!isEmpresa && this._perfil.rnp && this._perfil.rnp !== 'N/A') {
+            this._uiFacade.createKeyValue(kvContainer, 'RNP', this._perfil.rnp).mount();
+        }
+
+        if (!isEmpresa && this._perfil.titulo && this._perfil.titulo !== 'N/A') {
+            this._uiFacade.createKeyValue(kvContainer, 'Título', this._perfil.titulo).mount();
+        }
+
+        const situacaoColor = (this._perfil.situacao && this._perfil.situacao.toUpperCase().includes('ATIVA')) ? 'success' : 'warning';
+        const situacaoBadge = this._uiFacade.createBadge(null, this._perfil.situacao || 'N/A', situacaoColor, "ghost");
+        this._uiFacade.createKeyValue(kvContainer, 'Situação', situacaoBadge).mount();
+
+        cont.appendChild(kvContainer);
+
+        // Linha 3 (Link)
+        if (this._perfil.corpLink && this._perfil.corpLink !== 'N/A') {
+            const linkDiv = document.createElement('div');
+            linkDiv.style.cssText = 'font-size: 13px; margin-top: 8px;';
+            linkDiv.innerHTML = `<a href="${this._perfil.corpLink}" target="_blank" class="pts-link" style="display: inline-flex; align-items: center; gap: 4px;">
+                ${this._uiFacade.icons.get('BOX_ARROW_UP_RIGHT', { size: '12px' })} Ver no Portal Corporativo
+            </a>`;
+            cont.appendChild(linkDiv);
+        }
+
+        return cont;
     }
 }
