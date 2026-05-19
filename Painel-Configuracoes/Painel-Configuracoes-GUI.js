@@ -202,10 +202,13 @@ class ConfiguracoesGUI {
             width: "320px"
         }).mount();
 
-        this.panel.setPosition(0, window.innerHeight - 800);
+        this.panel.setPosition(20, window.innerHeight - 800);
+        this.panel.getNode().style.top = 'auto';
+        this.panel.getNode().style.bottom = '-5px';
+        this.panel.getNode().style.left = '20px';
 
         const content = document.createElement('div');
-        content.style.cssText = 'display: flex; flex-direction: column; gap: 10px; padding: 10px;';
+        content.style.cssText = 'display: flex; flex-direction: column; gap: 10px; padding: 10px; max-height: 50vh; overflow-y: auto;';
 
         const configAtual = this.controller.getConfig();
 
@@ -274,7 +277,7 @@ class ConfiguracoesGUI {
 
     _criarSecaoLimites(configAtual) {
         const secao = document.createElement('div');
-        secao.style.cssText = 'display: flex; flex-direction: column; padding-top: 8px; border-top: 1px solid var(--th-bg-light);';
+        secao.style.cssText = 'display: flex; flex-direction: column; padding-top: 8px;';
 
         const tituloRow = document.createElement('div');
         tituloRow.style.cssText = 'display: flex; justify-content: space-between; align-items: center; cursor: pointer; padding: 4px 0;';
@@ -282,27 +285,36 @@ class ConfiguracoesGUI {
         const tituloContainer = document.createElement('div');
         tituloContainer.style.cssText = 'display: flex; align-items: center; gap: 8px;';
 
-        const iconeToggle = document.createElement('span');
-        iconeToggle.innerHTML = this.ui.icons.get('CARET_DOWN_FILL', { size: '14px', color: 'var(--th-text-light)' });
-        
         const titulo = document.createElement('span');
         titulo.style.cssText = 'font-weight: bold; font-size: 14px; color: var(--th-text);';
         titulo.innerText = 'Limites de Páginas (Busca-ART)';
 
-        tituloContainer.appendChild(iconeToggle);
         tituloContainer.appendChild(titulo);
         tituloRow.appendChild(tituloContainer);
+
+        const btnToggleAnchor = document.createElement('div');
+        tituloRow.appendChild(btnToggleAnchor);
+
+        let isOpen = true;
+        const btnToggle = this.ui.createIconButton(
+            btnToggleAnchor,
+            this.ui.icons.get('CARET_UP_FILL', { color: 'var(--th-text-light)' }),
+            null,
+            'Recolher'
+        );
+        btnToggle.mount();
+
         secao.appendChild(tituloRow);
 
         const contentContainer = document.createElement('div');
         contentContainer.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-top: 8px; overflow: hidden;';
         secao.appendChild(contentContainer);
 
-        let isOpen = true;
         tituloRow.onclick = () => {
             isOpen = !isOpen;
             contentContainer.style.display = isOpen ? 'flex' : 'none';
-            iconeToggle.innerHTML = this.ui.icons.get(isOpen ? 'CARET_DOWN_FILL' : 'CARET_RIGHT_FILL', { size: '14px', color: 'var(--th-text-light)' });
+            btnToggle.setIcon(this.ui.icons.get(isOpen ? 'CARET_UP_FILL' : 'CARET_DOWN_FILL', { color: 'var(--th-text-light)' }));
+            btnToggle.el.title = isOpen ? 'Recolher' : 'Expandir';
         };
 
         const criarInputRow = (tipo, labelText, descText, value) => {
@@ -330,7 +342,7 @@ class ConfiguracoesGUI {
             const el = inputNum.el.querySelector('input');
             el.value = value;
             el.min = 1;
-            el.style.cssText = 'width: 100%; height: 32px; text-align: center; padding: 4px; font-size: 14px;';
+            el.style.cssText = 'width: 100%; height: 42px; text-align: center; padding: 4px; font-size: 14px; box-sizing: border-box;';
             el.addEventListener('change', (e) => this.controller.alterarLimiteBusca(tipo, e.target.value));
 
             this.inputsLimites[tipo] = inputNum;
@@ -370,27 +382,36 @@ class ConfiguracoesGUI {
         const tituloContainer = document.createElement('div');
         tituloContainer.style.cssText = 'display: flex; align-items: center; gap: 8px;';
 
-        const iconeToggle = document.createElement('span');
-        iconeToggle.innerHTML = this.ui.icons.get('CARET_DOWN_FILL', { size: '14px', color: 'var(--th-text-light)' });
-
         const titulo = document.createElement('span');
         titulo.style.cssText = 'font-weight: bold; font-size: 14px; color: var(--th-text);';
         titulo.innerText = 'Login e Sessões';
-        
-        tituloContainer.appendChild(iconeToggle);
+
         tituloContainer.appendChild(titulo);
         tituloRow.appendChild(tituloContainer);
+
+        const btnToggleAnchor = document.createElement('div');
+        tituloRow.appendChild(btnToggleAnchor);
+
+        let isOpen = true;
+        const btnToggle = this.ui.createIconButton(
+            btnToggleAnchor,
+            this.ui.icons.get('CARET_UP_FILL', { color: 'var(--th-text-light)' }),
+            null,
+            'Recolher'
+        );
+        btnToggle.mount();
+
         secao.appendChild(tituloRow);
 
         const contentContainer = document.createElement('div');
         contentContainer.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-top: 8px; overflow: hidden;';
         secao.appendChild(contentContainer);
 
-        let isOpen = true;
         tituloRow.onclick = () => {
             isOpen = !isOpen;
             contentContainer.style.display = isOpen ? 'flex' : 'none';
-            iconeToggle.innerHTML = this.ui.icons.get(isOpen ? 'CARET_DOWN_FILL' : 'CARET_RIGHT_FILL', { size: '14px', color: 'var(--th-text-light)' });
+            btnToggle.setIcon(this.ui.icons.get(isOpen ? 'CARET_UP_FILL' : 'CARET_DOWN_FILL', { color: 'var(--th-text-light)' }));
+            btnToggle.el.title = isOpen ? 'Recolher' : 'Expandir';
         };
 
         // Acessa a lista dinâmica de portais do GerenciadorSessao, se existir
