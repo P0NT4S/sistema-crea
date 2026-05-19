@@ -52,6 +52,14 @@ class ConfiguracoesController {
         this.ui.toast('Configuração de Arquivamento Auxiliado enviada aos scripts.', 'info');
     }
 
+    alterarLimiteBusca(tipo, valor) {
+        const num = parseInt(valor, 10);
+        if (isNaN(num) || num < 1) return;
+        const confAtual = this.service.getConfig();
+        const novosLimites = { ...confAtual.limitesBusca, [tipo]: num };
+        this.service.updateConfig({ limitesBusca: novosLimites });
+    }
+
     /**
      * Aplica o tema na página e salva em localStorage apenas como fallback
      * para caso o ThemeManager raiz (legacy) dependa dele momentaneamente.

@@ -424,7 +424,7 @@ class FiltroPorNumeroART extends IFiltroBusca {
 
     construirQueryParams() { return new URLSearchParams(); }
 
-    async processarPagina() {
+    async processarPagina(htmlDaPagina, rmoIdAtual, estadoAtual) {
         try {
             // 1. Busca o HTML da página de impressão de forma assíncrona (Background Fetch)
             const response = await this._CommBridge.apiART.gerarImpressaoArt(this.numeroArt);
@@ -439,12 +439,21 @@ class FiltroPorNumeroART extends IFiltroBusca {
             const partes = [e.logradouro, e.numero, e.complemento, e.bairro].filter(p => p && p.trim() !== "");
             const enderecoFormatado = `${partes.join(", ")}, ${e.cidade}-${e.uf}`;
 
-            // 4. Retorna o DTO compatível com a renderização de CardResultado
+            // 4. Monta o link para abrir a ART com base nos dados encontrados
+            const rnp = this._Utils.text.apenasNumeros(detalhes.responsavel.registro || "");
+            const chaveEmpresa = this._Utils.text.apenasNumeros(detalhes.responsavel.empresaContratada?.registro || "");
+            
+            let urlImpressao = `https://art.creadf.org.br/art1025/funcoes/form_impressao_tos.php?NUMERO_DA_ART=${this.numeroArt}&rnp=${rnp}&chave_empresa_contratada=${chaveEmpresa}`;
+            if (rmoIdAtual) {
+                urlImpressao += `&rmo_id=${rmoIdAtual}`;
+            }
+
+            // 5. Retorna o DTO compatível com a renderização de CardResultado
             return {
                 metadados: { totalPaginas: 1, totalOcorrencias: 1, artsNaPagina: 1 },
                 matches: [{
                     id: `direct-${this.numeroArt}`,
-                    url: `https://art.creadf.org.br/art1025/funcoes/form_impressao_tos.php?rnp_ficha_intranet=1&NUMERO_DA_ART=${this.numeroArt}`,
+                    url: urlImpressao,
                     artNum: detalhes.numeroART,
                     owner: detalhes.obra.proprietario,
                     address: enderecoFormatado,

@@ -71,8 +71,17 @@ class BuscaARTController {
 
             // B. Declarar o limite da paginação assíncrona (Ex: Processar 5 requisições de uma vez)
             const pagInicial = parseInt(dadosForm.pagina, 10) || 1;
-            const PICS_LIMITE = 5;
-            this._estadoAtualBusca = new EstadoPaginacao(pagInicial, PICS_LIMITE);
+            const limitesConf = (this._Utils.configGlobal && this._Utils.configGlobal.limitesBusca) 
+                ? this._Utils.configGlobal.limitesBusca 
+                : { endereco: 5, contrato: 15, profissional: 5, documento: 5 };
+            
+            let limiteDaBusca = 5;
+            if (modo === 'address') limiteDaBusca = limitesConf.endereco;
+            else if (modo === 'contract') limiteDaBusca = limitesConf.contrato;
+            else if (modo === 'professional') limiteDaBusca = limitesConf.profissional;
+            else if (modo === 'document' || modo === 'cnae') limiteDaBusca = limitesConf.documento;
+
+            this._estadoAtualBusca = new EstadoPaginacao(pagInicial, limiteDaBusca);
 
             // C. Injetar a estratégia e o limite no motor e acelerar!
             const rmoAtiva = await this._extrairRmoAtiva();
@@ -181,7 +190,16 @@ class BuscaARTController {
             btn.remove();
             this._painelUI.bloquearInputs(true);
             // Re-acelera o motor injetando o exato momento pausado anteriormente!
-            this._estadoAtualBusca.paginaLimite = (this._estadoAtualBusca.paginaAtual + 5) - 1; // Expande limite pra mais ciclo
+            // Para não quebrar o limite da paginação, incrementamos baseados no limite configurado atual
+            const limitesConf = (this._Utils.configGlobal && this._Utils.configGlobal.limitesBusca) || { endereco: 5, contrato: 15, profissional: 5, documento: 5 };
+            const modoAtual = this._painelUI._painelBusca._modoAtivo;
+            let ciclo = 5;
+            if (modoAtual === 'address') ciclo = limitesConf.endereco;
+            else if (modoAtual === 'contract') ciclo = limitesConf.contrato;
+            else if (modoAtual === 'professional') ciclo = limitesConf.profissional;
+            else if (modoAtual === 'document' || modoAtual === 'cnae') ciclo = limitesConf.documento;
+
+            this._estadoAtualBusca.paginaLimite = (this._estadoAtualBusca.paginaAtual + ciclo) - 1; // Expande limite pra mais ciclo
             this._motorServico.iniciarAssincrono(this._estrategiaAtual, this._estadoAtualBusca, await this._extrairRmoAtiva());
         };
 

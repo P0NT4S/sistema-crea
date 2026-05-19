@@ -6,8 +6,8 @@
  * sem precisar conhecer nenhum detalhe de construção de UI.
  *
  * @example
- *   const creds = await new PainelCredenciais(uiFacade).solicitar();
- *   if (creds) console.log(creds.usuario, creds.senha, creds.salvar);
+ *   const creds = await new PainelCredenciais(uiFacade).solicitar(portal);
+ *   if (creds) console.log(creds.usuario, creds.senha, creds.salvar, creds.portalId);
  */
 class PainelCredenciais {
     /**
@@ -25,24 +25,27 @@ class PainelCredenciais {
      * Exibe o painel de credenciais e retorna uma Promise que resolve quando
      * o usuário confirma (com as credenciais) ou cancela (com `null`).
      *
-     * @returns {Promise<{usuario: string, senha: string, salvar: boolean}|null>}
+     * @param {Object} portal - Objeto do portal (ex: { id: 'art', nome: 'Portal ART' })
+     * @returns {Promise<{usuario: string, senha: string, salvar: boolean, portalId: string}|null>}
      */
-    solicitar() {
-        return new Promise((resolve) => this._construir(resolve));
+    solicitar(portal) {
+        return new Promise((resolve) => this._construir(resolve, portal));
     }
 
     /**
      * Monta o painel usando exclusivamente os componentes do UIFactory.
      * @private
      * @param {Function} resolve - Callback da Promise externa.
+     * @param {Object} portal - Portal atual.
      */
-    _construir(resolve) {
+    _construir(resolve, portal) {
+        this._portal = portal;
         const icone = this._ui.icons.get('PERSON_CIRCLE', { size: '16px', color: 'currentColor' });
 
         this._painel = this._ui.createPanel({
             id: 'pts-painel-credenciais',
-            title: `${icone} Login nos Portais CREA`,
-            width: '340px',
+            title: `${icone} Login - ${portal.nome}`,
+            width: '300px',
             persist: true,
             draggable: false,
             closeButton: true
@@ -59,7 +62,7 @@ class PainelCredenciais {
 
         const descricao = document.createElement('p');
         descricao.style.cssText = 'font-size: 13px; color: var(--th-text-light); margin: 0; line-height: 1.5;';
-        descricao.innerHTML = 'Sessão inativa. Insira as credenciais para login automático nos portais <strong>ART</strong> e <strong>Corporativo</strong>.';
+        descricao.innerHTML = `Sessão inativa. Insira as credenciais para login automático em <strong>${portal.nome}</strong>.`;
         corpo.appendChild(descricao);
 
         this._inputLogin = this._ui.createInput(corpo, 'Usuário', 'Seu usuário CREA', 'text');
@@ -76,7 +79,7 @@ class PainelCredenciais {
 
         const iconEntrar = this._ui.icons.get('PERSON_BADGE', { color: 'currentColor' });
         const btnEntrar = this._ui.createButton(null, `${iconEntrar} Entrar`, 'success', () => this._confirmar(resolve));
-        
+
         // Botão maior (padding), centralizado no painel, mas com os textos (ícone+Entrar) à esquerda (flex-start)
         btnEntrar.el.style.cssText = 'padding: 12px 24px; min-width: 65%; display: flex; justify-content: flex-start; align-items: center; gap: 10px; font-size: 14px;';
         btnEntrar.mount(areaBotoes);
@@ -110,7 +113,7 @@ class PainelCredenciais {
         }
 
         this._painel.destroy();
-        resolve({ usuario, senha, salvar });
+        resolve({ usuario, senha, salvar, portalId: this._portal.id });
     }
 
     /**
@@ -146,9 +149,10 @@ class ConfiguracoesGUI {
         this.creaHelper = creaHelper;
         this.panel = null;
         this.switches = {};
+        this.inputsLimites = {};
 
         // Escuta solicitações de credenciais de outros scripts
-        window.addEventListener('P0NT4S_SolicitarCredenciais', () => this._abrirPainelCredenciais());
+        window.addEventListener('P0NT4S_SolicitarCredenciais', (e) => this._abrirPainelCredenciais(e.detail?.portal));
 
         this._criarBotaoFab();
 
@@ -198,7 +202,7 @@ class ConfiguracoesGUI {
             width: "320px"
         }).mount();
 
-        this.panel.setPosition(0, window.innerHeight - 450);
+        this.panel.setPosition(0, window.innerHeight - 800);
 
         const content = document.createElement('div');
         content.style.cssText = 'display: flex; flex-direction: column; gap: 10px; padding: 10px;';
@@ -253,12 +257,97 @@ class ConfiguracoesGUI {
             (isActive) => this.controller.alterarModoTeste(isActive)
         ));
 
+        // Seção de limites de páginas
+        content.appendChild(this._criarSecaoLimites(configAtual));
+
         // Seção de credenciais CREA (só renderiza se o CreaHelper estiver disponível)
         if (this.creaHelper && this.creaHelper.sessao) {
             content.appendChild(this._criarSecaoLogin());
         }
 
         this.panel.setContent(content);
+    }
+
+    // =========================================================================
+    // SEÇÃO DE LIMITES
+    // =========================================================================
+
+    _criarSecaoLimites(configAtual) {
+        const secao = document.createElement('div');
+        secao.style.cssText = 'display: flex; flex-direction: column; padding-top: 8px; border-top: 1px solid var(--th-bg-light);';
+
+        const tituloRow = document.createElement('div');
+        tituloRow.style.cssText = 'display: flex; justify-content: space-between; align-items: center; cursor: pointer; padding: 4px 0;';
+
+        const tituloContainer = document.createElement('div');
+        tituloContainer.style.cssText = 'display: flex; align-items: center; gap: 8px;';
+
+        const iconeToggle = document.createElement('span');
+        iconeToggle.innerHTML = this.ui.icons.get('CARET_DOWN_FILL', { size: '14px', color: 'var(--th-text-light)' });
+        
+        const titulo = document.createElement('span');
+        titulo.style.cssText = 'font-weight: bold; font-size: 14px; color: var(--th-text);';
+        titulo.innerText = 'Limites de Páginas (Busca-ART)';
+
+        tituloContainer.appendChild(iconeToggle);
+        tituloContainer.appendChild(titulo);
+        tituloRow.appendChild(tituloContainer);
+        secao.appendChild(tituloRow);
+
+        const contentContainer = document.createElement('div');
+        contentContainer.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-top: 8px; overflow: hidden;';
+        secao.appendChild(contentContainer);
+
+        let isOpen = true;
+        tituloRow.onclick = () => {
+            isOpen = !isOpen;
+            contentContainer.style.display = isOpen ? 'flex' : 'none';
+            iconeToggle.innerHTML = this.ui.icons.get(isOpen ? 'CARET_DOWN_FILL' : 'CARET_RIGHT_FILL', { size: '14px', color: 'var(--th-text-light)' });
+        };
+
+        const criarInputRow = (tipo, labelText, descText, value) => {
+            const row = document.createElement('div');
+            row.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed var(--th-bg-light);';
+
+            const labelContainer = document.createElement('div');
+            labelContainer.style.cssText = 'display: flex; flex-direction: column; width: 65%;';
+
+            const label = document.createElement('span');
+            label.innerText = labelText;
+            label.style.cssText = 'color: var(--th-text); font-weight: bold; font-size: 14px;';
+
+            const desc = document.createElement('span');
+            desc.innerText = descText;
+            desc.style.cssText = 'color: var(--th-text-light); font-size: 12px; line-height: 1.2;';
+
+            labelContainer.appendChild(label);
+            labelContainer.appendChild(desc);
+
+            const inputContainer = document.createElement('div');
+            inputContainer.style.cssText = 'width: 80px;';
+            const inputNum = this.ui.createInput(inputContainer, '', '', 'number');
+            inputNum.mount();
+            const el = inputNum.el.querySelector('input');
+            el.value = value;
+            el.min = 1;
+            el.style.cssText = 'width: 100%; height: 32px; text-align: center; padding: 4px; font-size: 14px;';
+            el.addEventListener('change', (e) => this.controller.alterarLimiteBusca(tipo, e.target.value));
+
+            this.inputsLimites[tipo] = inputNum;
+
+            row.appendChild(labelContainer);
+            row.appendChild(inputContainer);
+            return row;
+        };
+
+        const limites = configAtual.limitesBusca || { endereco: 5, contrato: 15, profissional: 5, documento: 5 };
+
+        contentContainer.appendChild(criarInputRow('endereco', 'Endereço', 'Páginas verificadas na busca por endereço.', limites.endereco));
+        contentContainer.appendChild(criarInputRow('contrato', 'Contrato', 'Páginas verificadas na busca por contrato.', limites.contrato));
+        contentContainer.appendChild(criarInputRow('profissional', 'Profissional', 'Páginas verificadas na busca por profissional.', limites.profissional));
+        contentContainer.appendChild(criarInputRow('documento', 'Documento', 'Páginas verificadas na busca por CPF/CNPJ.', limites.documento));
+
+        return secao;
     }
 
     // =========================================================================
@@ -273,51 +362,104 @@ class ConfiguracoesGUI {
     _criarSecaoLogin() {
         const secao = document.createElement('div');
         secao.id = 'pts-secao-login';
-        // border-top removido pois o último switchRow já tem border-bottom
-        secao.style.cssText = 'display: flex; flex-direction: column; gap: 8px; padding-top: 8px;';
+        secao.style.cssText = 'display: flex; flex-direction: column; padding-top: 8px; border-top: 1px solid var(--th-bg-light);';
 
         const tituloRow = document.createElement('div');
-        tituloRow.style.cssText = 'display: flex; justify-content: space-between; align-items: center;';
+        tituloRow.style.cssText = 'display: flex; justify-content: space-between; align-items: center; cursor: pointer; padding: 4px 0;';
+
+        const tituloContainer = document.createElement('div');
+        tituloContainer.style.cssText = 'display: flex; align-items: center; gap: 8px;';
+
+        const iconeToggle = document.createElement('span');
+        iconeToggle.innerHTML = this.ui.icons.get('CARET_DOWN_FILL', { size: '14px', color: 'var(--th-text-light)' });
 
         const titulo = document.createElement('span');
         titulo.style.cssText = 'font-weight: bold; font-size: 14px; color: var(--th-text);';
-        titulo.innerText = 'Login nos Portais CREA';
-
-        const btnEditar = this.ui.createButton(
-            null,
-            `${this.ui.icons.get('PERSON_BADGE', { color: 'currentColor' })} Editar`,
-            'ghost',
-            () => this._abrirPainelCredenciais()
-        );
-        btnEditar.el.style.cssText = 'font-size: 12px; padding: 4px 10px;';
-
-        tituloRow.appendChild(titulo);
-        tituloRow.appendChild(btnEditar.getNode());
+        titulo.innerText = 'Login e Sessões';
+        
+        tituloContainer.appendChild(iconeToggle);
+        tituloContainer.appendChild(titulo);
+        tituloRow.appendChild(tituloContainer);
         secao.appendChild(tituloRow);
 
-        // Label que mostra o usuário salvo (ou "Nenhum")
-        const infoUsuario = document.createElement('span');
-        infoUsuario.id = 'pts-login-usuario-info';
-        infoUsuario.style.cssText = 'font-size: 12px; color: var(--th-text-light);';
-        this._atualizarInfoUsuario(infoUsuario);
-        secao.appendChild(infoUsuario);
+        const contentContainer = document.createElement('div');
+        contentContainer.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-top: 8px; overflow: hidden;';
+        secao.appendChild(contentContainer);
+
+        let isOpen = true;
+        tituloRow.onclick = () => {
+            isOpen = !isOpen;
+            contentContainer.style.display = isOpen ? 'flex' : 'none';
+            iconeToggle.innerHTML = this.ui.icons.get(isOpen ? 'CARET_DOWN_FILL' : 'CARET_RIGHT_FILL', { size: '14px', color: 'var(--th-text-light)' });
+        };
+
+        // Acessa a lista dinâmica de portais do GerenciadorSessao, se existir
+        const portais = (this.creaHelper && this.creaHelper.sessao && this.creaHelper.sessao.constructor.PORTAIS)
+            ? this.creaHelper.sessao.constructor.PORTAIS
+            : [];
+
+        portais.forEach(portal => {
+            const row = document.createElement('div');
+            row.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px dashed var(--th-bg-light);';
+
+            const info = document.createElement('div');
+            info.style.cssText = 'display: flex; flex-direction: column;';
+            const nome = document.createElement('span');
+            nome.innerText = portal.nome;
+            nome.style.cssText = 'font-weight: bold; font-size: 13px; color: var(--th-text);';
+            const desc = document.createElement('span');
+            desc.id = `pts-login-usuario-info-${portal.id}`;
+            desc.style.cssText = 'font-size: 12px; color: var(--th-text-light);';
+
+            info.appendChild(nome);
+            info.appendChild(desc);
+            row.appendChild(info);
+
+            if (portal.requerCredenciais) {
+                const btnEditar = this.ui.createButton(
+                    null,
+                    `${this.ui.icons.get('PERSON_BADGE', { color: 'currentColor' })} Editar`,
+                    'ghost',
+                    () => this._abrirPainelCredenciais(portal)
+                );
+                btnEditar.el.style.cssText = 'font-size: 12px; padding: 4px 10px;';
+                row.appendChild(btnEditar.getNode());
+            } else {
+                const badge = document.createElement('span');
+                badge.innerText = 'Sessão SGF (Aberta)';
+                badge.style.cssText = 'font-size: 10px; background: var(--th-bg-light); padding: 2px 6px; border-radius: 4px; color: var(--th-text-light);';
+                row.appendChild(badge);
+            }
+
+            contentContainer.appendChild(row);
+        });
+
+        this._atualizarInfoUsuario();
 
         return secao;
     }
 
     /**
-     * Atualiza o label de usuário salvo dentro da seção de login.
+     * Atualiza os labels de usuário salvo dentro da seção de login.
      * @private
-     * @param {HTMLElement} [el] - Elemento a atualizar. Se omitido, busca no DOM.
      */
-    _atualizarInfoUsuario(el = null) {
-        const label = el || document.getElementById('pts-login-usuario-info');
-        if (!label || !this.creaHelper?.sessao) return;
+    _atualizarInfoUsuario() {
+        if (!this.creaHelper?.sessao) return;
 
-        const { usuario } = this.creaHelper.sessao.recuperarCredenciais();
-        label.innerText = usuario
-            ? `Usuário salvo: ${usuario}`
-            : 'Nenhum login salvo.';
+        const creds = this.creaHelper.sessao.recuperarCredenciais();
+        const portais = this.creaHelper.sessao.constructor.PORTAIS || [];
+
+        portais.forEach(portal => {
+            const label = document.getElementById(`pts-login-usuario-info-${portal.id}`);
+            if (!label) return;
+
+            if (portal.requerCredenciais) {
+                const user = creds[portal.id]?.usuario;
+                label.innerText = user ? `Usuário salvo: ${user}` : 'Nenhum login salvo.';
+            } else {
+                label.innerText = 'Injeção automática habilitada.';
+            }
+        });
     }
 
     /**
@@ -330,40 +472,42 @@ class ConfiguracoesGUI {
     }
 
     /**
-     * Abre o `PainelCredenciais` e, ao confirmar:
+     * Abre o `PainelCredenciais` para um portal específico.
+     * Ao confirmar:
      * - Salva as credenciais via `GerenciadorSessao`
      * - Dispara `P0NT4S_CredenciaisDefinidas` (para scripts aguardando)
-     * - Tenta fazer login nos portais
+     * - Tenta fazer login no portal
      * Ao cancelar, dispara `P0NT4S_CredenciaisCanceladas`.
      * @private
+     * @param {Object} portal - Portal a ser editado
      */
-    async _abrirPainelCredenciais() {
+    async _abrirPainelCredenciais(portal) {
+        if (!portal) return;
+
         // Evita abrir múltiplos painéis ao mesmo tempo
         if (document.getElementById('pts-painel-credenciais')) return;
 
-        const creds = await new PainelCredenciais(this.ui).solicitar();
+        const creds = await new PainelCredenciais(this.ui).solicitar(portal);
 
         if (!creds) {
-            window.dispatchEvent(new CustomEvent('P0NT4S_CredenciaisCanceladas'));
+            window.dispatchEvent(new CustomEvent('P0NT4S_CredenciaisCanceladas', { detail: { portalId: portal.id } }));
             return;
         }
 
         // Salva credenciais e notifica outros scripts
         if (this.creaHelper?.sessao) {
-            if (creds.salvar) this.creaHelper.sessao.salvarCredenciais(creds.usuario, creds.senha);
+            if (creds.salvar) this.creaHelper.sessao.salvarCredenciais(portal.id, creds.usuario, creds.senha);
 
-            // Notifica scripts que estavam aguardando (ex: BuscaART)
             window.dispatchEvent(new CustomEvent('P0NT4S_CredenciaisDefinidas', { detail: creds }));
 
-            // Também tenta o login diretamente
-            const sucesso = await this.creaHelper.sessao._logarOndeNecessario(false, false, creds.usuario, creds.senha);
+            // Também tenta o login diretamente para este portal
+            const sucesso = await this.creaHelper.sessao._logarOndeNecessario({ [portal.id]: false }, creds);
             if (sucesso) {
-                this.ui.toast('Login nos portais CREA realizado com sucesso!', 'success');
+                this.ui.toast(`Login em ${portal.nome} realizado com sucesso!`, 'success');
             } else {
-                this.ui.toast('Falha ao fazer login. Verifique as credenciais.', 'error');
+                this.ui.toast(`Falha ao fazer login em ${portal.nome}. Verifique as credenciais.`, 'error');
             }
         } else {
-            // CreaHelper sem sessão — apenas repassa as credenciais
             window.dispatchEvent(new CustomEvent('P0NT4S_CredenciaisDefinidas', { detail: creds }));
         }
 
@@ -393,5 +537,14 @@ class ConfiguracoesGUI {
         if (this.switches.tema) this.switches.tema.setValue(config.tema === 'dark');
         if (this.switches.arquivamento) this.switches.arquivamento.setValue(config.arquivamentoAuxiliado);
         if (this.switches.modoTeste) this.switches.modoTeste.setValue(config.modoTeste);
+
+        if (config.limitesBusca) {
+            for (const [tipo, input] of Object.entries(this.inputsLimites)) {
+                if (input && input.el) {
+                    const el = input.el.querySelector('input');
+                    if (el) el.value = config.limitesBusca[tipo];
+                }
+            }
+        }
     }
 }

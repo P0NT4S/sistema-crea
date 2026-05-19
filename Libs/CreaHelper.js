@@ -958,8 +958,13 @@ class CorpPortal {
  */
 class GerenciadorSessao {
     /* Chaves usadas no storage do Tampermonkey (escopo do userscript). */
-    static CHAVE_USUARIO = 'pts_crea_usuario';
-    static CHAVE_SENHA   = 'pts_crea_senha';
+    static CHAVE_CREDENCIAIS = 'pts_crea_credenciais';
+
+    static PORTAIS = [
+        { id: 'art', nome: 'Portal ART', requerCredenciais: true },
+        { id: 'corp', nome: 'Portal Corporativo', requerCredenciais: true },
+        { id: 'movimentacao', nome: 'SGF (Movimentações)', requerCredenciais: false }
+    ];
 
     /**
      * @param {CoreUtils}   coreUtils  - Instância do núcleo de utilitários.
@@ -975,15 +980,20 @@ class GerenciadorSessao {
     // =========================================================================
 
     /**
-     * Verifica o estado das sessões nos dois portais em paralelo.
-     * @returns {Promise<{ art: boolean, corp: boolean }>}
+     * Verifica o estado das sessões em todos os portais.
+     * @returns {Promise<Object>}
      */
     async verificarSessoes() {
-        const [art, corp] = await Promise.all([
+        const statuses = await Promise.all([
             this._bridge.apiART.verificarSessaoArt(),
-            this._bridge.apiART.verificarSessaoCorp()
+            this._bridge.apiART.verificarSessaoCorp(),
+            this._bridge.apiART.verificarSessaoMovimentacao ? this._bridge.apiART.verificarSessaoMovimentacao() : Promise.resolve(true)
         ]);
-        return { art, corp };
+        return {
+            art: statuses[0],
+            corp: statuses[1],
+            movimentacao: statuses[2]
+        };
     }
 
     /**
@@ -992,7 +1002,6 @@ class GerenciadorSessao {
      * @returns {Promise<boolean>} `true` se todas as sessões estiverem ativas ao final.
      */
     async garantirSessoes() {
-        // Bloqueia múltiplas chamadas simultâneas (ex: múltiplos scripts chamando ao mesmo tempo)
         if (this._promiseGarantir) return this._promiseGarantir;
         this._promiseGarantir = this._executarGarantirSessoes();
         try {
@@ -1006,70 +1015,81 @@ class GerenciadorSessao {
         this.core.log.info('GerenciadorSessao', 'Verificando sessões nos portais CREA...');
 
         let sessoes = await this.verificarSessoes();
-        if (sessoes.art && sessoes.corp) {
-            this.core.log.success('GerenciadorSessao', 'Sessões ART e Corporativo ativas.');
-            return true;
+        const creds = this.recuperarCredenciais();
+
+        // Para cada portal que requer credencial e está inativo, tenta login automático
+        let precisaSolicitarCredenciais = false;
+
+        for (const portal of GerenciadorSessao.PORTAIS) {
+            if (portal.requerCredenciais && !sessoes[portal.id]) {
+                const cred = creds[portal.id];
+                if (cred && cred.usuario && cred.senha) {
+                    this.core.log.info('GerenciadorSessao', `Tentando login automático em ${portal.nome}...`);
+                    await this._logarOndeNecessario({ [portal.id]: false }, cred);
+                } else {
+                    precisaSolicitarCredenciais = true;
+                }
+            }
         }
 
-        let { usuario, senha } = this.recuperarCredenciais();
-
-        // 1. Tenta logar automaticamente se houver credenciais salvas
-        if (usuario && senha) {
-            this.core.log.info('GerenciadorSessao', 'Tentando login automático...');
-            const sucesso = await this._logarOndeNecessario(sessoes.art, sessoes.corp, usuario, senha);
-            if (sucesso) return true;
-            
-            // Se falhou parcialmente, re-verifica quais ainda estão pendentes
-            sessoes = await this.verificarSessoes();
-            if (sessoes.art && sessoes.corp) return true;
-        }
-
-        // 2. Se não tinha credenciais ou o login automático falhou, solicita via painel
-        const creds = await this._solicitarCredenciaisViaEvento();
-        if (!creds) {
-            this.core.log.warning('GerenciadorSessao', 'Login cancelado pelo usuário.');
-            return false;
-        }
+        sessoes = await this.verificarSessoes();
         
-        usuario = creds.usuario;
-        senha   = creds.senha;
-        if (creds.salvar) this.salvarCredenciais(usuario, senha);
+        // Se ainda houver portais inativos que exigem credenciais, abre o modal
+        for (const portal of GerenciadorSessao.PORTAIS) {
+            if (portal.requerCredenciais && !sessoes[portal.id]) {
+                this.core.log.warning('GerenciadorSessao', `Login pendente para ${portal.nome}.`);
+                const novaCred = await this._solicitarCredenciaisViaEvento(portal);
+                if (!novaCred) {
+                    this.core.log.warning('GerenciadorSessao', `Login cancelado pelo usuário para ${portal.nome}.`);
+                } else {
+                    if (novaCred.salvar) this.salvarCredenciais(portal.id, novaCred.usuario, novaCred.senha);
+                    await this._logarOndeNecessario({ [portal.id]: false }, novaCred);
+                }
+            }
+        }
 
-        return await this._logarOndeNecessario(sessoes.art, sessoes.corp, usuario, senha);
+        sessoes = await this.verificarSessoes();
+        const todosAtivos = GerenciadorSessao.PORTAIS.every(p => !p.requerCredenciais || sessoes[p.id]);
+        return todosAtivos;
     }
 
     /**
      * Recupera as credenciais persistidas no storage do Tampermonkey.
-     * @returns {{ usuario: string, senha: string }}
+     * @returns {Object} Dicionário de credenciais por portal.
      */
     recuperarCredenciais() {
-        if (typeof GM_getValue === 'undefined') return { usuario: '', senha: '' };
-        return {
-            usuario: GM_getValue(GerenciadorSessao.CHAVE_USUARIO, ''),
-            senha:   GM_getValue(GerenciadorSessao.CHAVE_SENHA,   '')
-        };
+        if (typeof GM_getValue === 'undefined') return {};
+        const str = GM_getValue(GerenciadorSessao.CHAVE_CREDENCIAIS, null);
+        if (str) {
+            try {
+                return JSON.parse(str);
+            } catch (e) {}
+        }
+        return {};
     }
 
     /**
      * Persiste as credenciais no storage do Tampermonkey.
-     * @param {string} usuario
-     * @param {string} senha
      */
-    salvarCredenciais(usuario, senha) {
+    salvarCredenciais(portalId, usuario, senha) {
         if (typeof GM_setValue === 'undefined') return;
-        GM_setValue(GerenciadorSessao.CHAVE_USUARIO, usuario);
-        GM_setValue(GerenciadorSessao.CHAVE_SENHA,   senha);
-        this.core.log.info('GerenciadorSessao', 'Credenciais salvas no storage.');
+        const creds = this.recuperarCredenciais();
+        creds[portalId] = { usuario, senha };
+        GM_setValue(GerenciadorSessao.CHAVE_CREDENCIAIS, JSON.stringify(creds));
+        this.core.log.info('GerenciadorSessao', `Credenciais salvas para ${portalId}.`);
     }
 
     /**
-     * Remove as credenciais do storage (usado quando o login falha).
+     * Remove as credenciais de um portal do storage (usado quando o login falha).
      */
-    limparCredenciais() {
+    limparCredenciais(portalId) {
         if (typeof GM_setValue === 'undefined') return;
-        GM_setValue(GerenciadorSessao.CHAVE_USUARIO, '');
-        GM_setValue(GerenciadorSessao.CHAVE_SENHA,   '');
-        this.core.log.warning('GerenciadorSessao', 'Credenciais removidas do storage.');
+        const creds = this.recuperarCredenciais();
+        if (creds[portalId]) {
+            delete creds[portalId];
+            GM_setValue(GerenciadorSessao.CHAVE_CREDENCIAIS, JSON.stringify(creds));
+            this.core.log.warning('GerenciadorSessao', `Credenciais removidas para ${portalId}.`);
+        }
     }
 
     // =========================================================================
@@ -1078,46 +1098,57 @@ class GerenciadorSessao {
 
     /**
      * Tenta autenticar nos portais que ainda estiverem inativos.
-     * Em caso de falha total, limpa as credenciais armazenadas.
+     * Em caso de falha total, limpa as credenciais armazenadas para aquele portal.
+     * @param {Object} sessoes - Objeto com status (ex: { art: false })
+     * @param {Object} creds - Credenciais usadas (ex: { usuario: 'x', senha: 'y' })
      * @private
      */
-    async _logarOndeNecessario(artAtiva, corpAtiva, usuario, senha) {
-        const tentativas = await Promise.allSettled([
-            artAtiva  ? Promise.resolve(true) : this._bridge.apiART.logarArt(usuario, senha),
-            corpAtiva ? Promise.resolve(true) : this._bridge.apiART.logarCorp(usuario, senha)
-        ]);
-
-        const artOk  = tentativas[0].value === true;
-        const corpOk = tentativas[1].value === true;
-
-        if (artOk && corpOk) {
-            this.core.log.success('GerenciadorSessao', 'Login realizado com sucesso nos portais do CREA.');
-            return true;
+    async _logarOndeNecessario(sessoes, creds) {
+        let sucessoGeral = true;
+        
+        if (sessoes.art === false && creds.usuario && creds.senha) {
+            const ok = await this._bridge.apiART.logarArt(creds.usuario, creds.senha);
+            if (!ok) {
+                this.core.log.error('GerenciadorSessao', 'Falha ao fazer login em ART.');
+                this.limparCredenciais('art');
+                sucessoGeral = false;
+            } else {
+                this.core.log.success('GerenciadorSessao', 'Login em ART realizado.');
+            }
         }
 
-        const falhas = [...(!artOk ? ['ART'] : []), ...(!corpOk ? ['Corporativo'] : [])];
-        this.core.log.error('GerenciadorSessao', `Falha ao fazer login em: ${falhas.join(', ')}.`);
-        // Limpa para forçar nova solicitação na próxima execução
-        this.limparCredenciais();
-        return false;
+        if (sessoes.corp === false && creds.usuario && creds.senha) {
+            const ok = await this._bridge.apiART.logarCorp(creds.usuario, creds.senha);
+            if (!ok) {
+                this.core.log.error('GerenciadorSessao', 'Falha ao fazer login no Corporativo.');
+                this.limparCredenciais('corp');
+                sucessoGeral = false;
+            } else {
+                this.core.log.success('GerenciadorSessao', 'Login no Corporativo realizado.');
+            }
+        }
+
+        return sucessoGeral;
     }
 
     /**
      * Dispara o evento `P0NT4S_SolicitarCredenciais` e aguarda a resposta da UI
-     * (evento `P0NT4S_CredenciaisDefinidas`) ou cancelamento (`P0NT4S_CredenciaisCanceladas`).
-     * O ConfigPanel escuta o primeiro evento e resolve com o segundo.
      * @private
+     * @param {Object} portal - Portal sendo solicitado.
      * @returns {Promise<{ usuario: string, senha: string, salvar: boolean }|null>}
      */
-    _solicitarCredenciaisViaEvento() {
+    _solicitarCredenciaisViaEvento(portal) {
         return new Promise((resolve) => {
             const aoDefinir = (e) => {
                 limpar();
                 resolve(e.detail);
             };
-            const aoCancelar = () => {
-                limpar();
-                resolve(null);
+            const aoCancelar = (e) => {
+                // Se cancelou o mesmo portal
+                if (e.detail?.portalId === portal.id || !e.detail?.portalId) {
+                    limpar();
+                    resolve(null);
+                }
             };
             const limpar = () => {
                 window.removeEventListener('P0NT4S_CredenciaisDefinidas',   aoDefinir);
@@ -1125,10 +1156,10 @@ class GerenciadorSessao {
             };
 
             window.addEventListener('P0NT4S_CredenciaisDefinidas',   aoDefinir,   { once: true });
-            window.addEventListener('P0NT4S_CredenciaisCanceladas', aoCancelar, { once: true });
+            window.addEventListener('P0NT4S_CredenciaisCanceladas', aoCancelar);
 
             window.dispatchEvent(new CustomEvent('P0NT4S_SolicitarCredenciais', {
-                detail: { motivo: 'Sessão inativa nos portais CREA.' }
+                detail: { motivo: `Sessão inativa em ${portal.nome}.`, portal: portal }
             }));
         });
     }

@@ -4,7 +4,13 @@ class ConfiguracoesService {
         this.defaultConfig = {
             tema: 'light',
             modoTeste: false,
-            arquivamentoAuxiliado: false
+            arquivamentoAuxiliado: false,
+            limitesBusca: {
+                endereco: 5,
+                contrato: 15,
+                profissional: 5,
+                documento: 5
+            }
         };
         // Carrega configurações persistidas (Fonte da Verdade)
         this.config = this._load();

@@ -300,6 +300,34 @@ class CreaAPI {
     }
 
     /**
+     * "Aquece" e verifica a sessão do portal de Movimentações (SGF).
+     * O SGF utiliza a sessão já existente, mas requer que algumas rotas sejam
+     * visitadas para inicializar o estado no backend antes da API funcionar.
+     * @returns {Promise<boolean>}
+     */
+    async verificarSessaoMovimentacao() {
+        return new Promise((resolve) => {
+            if (typeof GM_xmlhttpRequest === "undefined") {
+                return resolve(false);
+            }
+            GM_xmlhttpRequest({
+                method: 'GET',
+                url: 'https://sgf.creadf.org.br/admin/movimentacao',
+                onload: (r) => {
+                    // O SGF retorna 200 se a sessão estiver ativa, ou 401/redirect se não estiver.
+                    const ativa = r.status >= 200 && r.status < 300 && !r.finalUrl.includes('login');
+                    this.bridge.log.info('CreaAPI', `Sessão Movimentações: ${ativa ? 'ATIVA' : 'INATIVA (Requer inicialização via RMO)'}`);
+                    resolve(ativa);
+                },
+                onerror: () => {
+                    this.bridge.log.warning('CreaAPI', 'Falha de rede ao checar Sessão Movimentações.');
+                    resolve(false);
+                }
+            });
+        });
+    }
+
+    /**
      * Autentica no portal Corporativo.
      * Passo 1: GET na página de login para extrair o token CSRF (campo _token).
      * Passo 2: POST ao endpoint /autentica com o token e as credenciais.
