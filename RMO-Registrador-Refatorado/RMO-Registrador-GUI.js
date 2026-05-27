@@ -68,6 +68,7 @@ class PainelRegistroRmo {
 
         const htmlFormulario = `
             <div id="rmo-reg-kv-numero"></div>
+            <div id="rmo-reg-sincronizacao" style="margin-top: 6px; display: none;"></div>
 
             <div class="pts-group" style="margin-top: 12px;">
                 <label class="pts-label">Status da Fiscalização</label>
@@ -217,6 +218,34 @@ class PainelRegistroRmo {
     limparFeedback() {
         const container = this._painel?.el?.querySelector('#rmo-reg-feedback');
         if (container) {
+            container.style.display = 'none';
+            container.innerHTML = '';
+        }
+    }
+
+    /**
+     * Atualiza o status visual de sincronização da RMO com o backend local.
+     * Exibe o indicador apenas se houver um registro do script na página e ele estiver
+     * em total sincronia com o backend local (conforme solicitação do usuário).
+     *
+     * @param {boolean} temRegistroPagina - Indica se a observação no CREA possui demarcador "§".
+     * @param {boolean} estaSincronizado - Indica se a descrição do CREA e do backend são idênticas.
+     */
+    atualizarStatusSincronizacao(temRegistroPagina, estaSincronizado) {
+        const container = this._painel?.el?.querySelector('#rmo-reg-sincronizacao');
+        if (!container) return;
+
+        if (temRegistroPagina && estaSincronizado) {
+            const icone = IconSet.get('CHECK_CIRCLE_FILL', { color: 'var(--th-success)', size: '16px' });
+            container.style.display = 'flex';
+            container.style.alignItems = 'center';
+            container.style.gap = '6px';
+            container.innerHTML = `
+                <span class="pts-badge pts-badge--success" style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; background: rgba(40, 167, 69, 0.15); color: var(--th-success);">
+                    ${icone} Sincronizado
+                </span>
+            `;
+        } else {
             container.style.display = 'none';
             container.innerHTML = '';
         }

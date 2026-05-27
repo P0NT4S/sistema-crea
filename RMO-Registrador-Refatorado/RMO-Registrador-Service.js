@@ -111,6 +111,52 @@ class RmoRegistradorService {
      * @param {CreaHelper} creaHelper - Instância para acesso à RMO nativa.
      * @param {string} descricao - Texto a ser concatenado.
      */
+    /**
+     * Obtém a observação atual da RMO cadastrada na página do CREA.
+     * @param {CreaHelper} creaHelper
+     * @returns {Promise<string>}
+     */
+    async obterObservacaoDaPagina(creaHelper) {
+        try {
+            const abaOutros = await creaHelper.rmo.getDadosRmo('outros');
+            return abaOutros?.observacoes || "";
+        } catch (erro) {
+            this._log.error('RmoService', 'Erro ao obter observações da página:', erro);
+            return "";
+        }
+    }
+
+    /**
+     * Gera o novo texto de observação, inserindo o demarcador "§" no início
+     * ou substituindo a descrição registrada anteriormente se ela já contiver "§".
+     *
+     * @param {string} obsAtuais - Observações atuais da RMO no sistema.
+     * @param {string} novaDescricao - Descrição a ser salva.
+     * @returns {string} O novo texto de observações montado.
+     * @private
+     */
+    _gerarNovaObservacao(obsAtuais, novaDescricao) {
+        const obsLimpa = (obsAtuais || "").trim();
+        const marcador = '§';
+        const indicePrefixo = obsLimpa.indexOf(marcador);
+
+        if (indicePrefixo !== -1) {
+            // Se já tem o demarcador, extrai tudo que vem antes (preservando texto manual) e atualiza
+            const textoAnterior = obsLimpa.substring(0, indicePrefixo);
+            return `${textoAnterior}${marcador} ${novaDescricao.trim()}`;
+        } else {
+            // Se não tem o demarcador, concatena no final precedido de "§ "
+            const separador = obsLimpa ? '\n\n' : '';
+            return `${obsLimpa}${separador}${marcador} ${novaDescricao.trim()}`;
+        }
+    }
+
+    /**
+     * Injeta a descrição no campo de observações da RMO na página atual
+     * e aciona o salvamento nativo do sistema do CREA.
+     * @param {CreaHelper} creaHelper - Instância para acesso à RMO nativa.
+     * @param {string} descricao - Texto a ser concatenado.
+     */
     async salvarNaPagina(creaHelper, descricao) {
         if (!descricao || descricao.trim() === '') return false;
 
@@ -123,13 +169,12 @@ class RmoRegistradorService {
             }
 
             const obsAtuais = abaOutros.observacoes || "";
-            // Evita duplicação caso o usuário clique em salvar várias vezes com a mesma descrição
-            if (obsAtuais.includes(descricao)) {
-                this._log.info('RmoService', 'A descrição já está presente nas observações. Apenas salvando...');
+            const novaObs = this._gerarNovaObservacao(obsAtuais, descricao);
+            
+            // Evita atualizar à toa se a observação for idêntica
+            if (obsAtuais === novaObs) {
+                this._log.info('RmoService', 'A observação na página já está idêntica. Apenas salvando...');
             } else {
-                const separador = obsAtuais ? '\n\n' : '';
-                const novaObs = `${obsAtuais}${separador}${descricao}`;
-                
                 const injetou = creaHelper.rmo.setDadosRmo({ outros: { observacoes: novaObs } });
                 if (!injetou) {
                     this._log.error('RmoService', 'Falha ao injetar as novas observações no Angular.');
@@ -169,13 +214,12 @@ class RmoRegistradorService {
             }
 
             const obsAtuais = abaOutros.observacoes || "";
-            // Evita duplicação caso o usuário clique em salvar várias vezes
-            if (obsAtuais.includes(descricao)) {
-                this._log.info('RmoService', 'A descrição já está presente nas observações. Apenas enviando...');
+            const novaObs = this._gerarNovaObservacao(obsAtuais, descricao);
+
+            // Evita atualizar à toa se a observação for idêntica
+            if (obsAtuais === novaObs) {
+                this._log.info('RmoService', 'A observação na página já está idêntica. Apenas enviando...');
             } else {
-                const separador = obsAtuais ? '\n\n' : '';
-                const novaObs = `${obsAtuais}${separador}${descricao}`;
-                
                 const injetou = creaHelper.rmo.setDadosRmo({ outros: { observacoes: novaObs } });
                 if (!injetou) {
                     this._log.error('RmoService', 'Falha ao injetar as novas observações no Angular.');

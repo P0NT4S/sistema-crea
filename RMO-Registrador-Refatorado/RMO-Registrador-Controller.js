@@ -72,6 +72,8 @@ class RmoRegistradorController {
             if (!foiConstruido) {
                 // Primeira abertura: constrói o painel com o estado atual do model
                 this._painelUI.construir(this._modelo);
+                // Exibe o status de sincronização no painel recém-construído
+                this._painelUI.atualizarStatusSincronizacao(this._modelo.temRegistroPagina, this._modelo.estaSincronizado);
             } else {
                 // Aberturas subsequentes: apenas alterna visibilidade
                 this._painelUI.toggle();
@@ -89,6 +91,11 @@ class RmoRegistradorController {
     /**
      * Recebe o evento de submissão do formulário enviado pela GUI.
      * Valida via Domain, persiste via Service e atualiza a GUI com o resultado.
+     *
+     * @param {{ status: string, descricao: string }} dadosForm - Dados brut    /**
+     * Recebe o evento de submissão do formulário enviado pela GUI.
+     * Injeta e salva na página do CREA em primeiro lugar (evitando bloqueios por rede do Oráculo),
+     * e sincroniza em background (assíncrono) com o backend local do Python.
      *
      * @param {{ status: string, descricao: string }} dadosForm - Dados brutos do formulário.
      * @private
@@ -114,46 +121,54 @@ class RmoRegistradorController {
 
         // C. Bloqueia a UI e exibe feedback de carregamento
         this._painelUI.bloquearForm(true);
-        this._painelUI.atualizarFeedback('Salvando registro...', 'loading');
+        this._painelUI.atualizarFeedback('Salvando registro no CREA...', 'loading');
 
         try {
-            // D. Serializa o model para o DTO e envia via Service
-            const payload = new PayloadRegistroRmo(this._modelo).serializar();
-            await this._servico.salvarRmo(payload);
-
             const isArquivamentoAuxiliado = this._utils.configGlobal && this._utils.configGlobal.arquivamentoAuxiliado === true;
             const deveArquivar = isArquivamentoAuxiliado && (this._modelo.status.valor === 'Regular' || this._modelo.status.valor === 'Informações Insuficientes');
 
+            // D. Primeiro salva ou envia no sistema nativo do CREA (operação de cliente rápida)
             if (deveArquivar) {
-                // E. Injeta a descrição, aciona o enviar nativo e abre a página de movimentação
                 this._painelUI.atualizarFeedback('Enviando RMO no sistema...', 'loading');
                 await this._servico.enviarEArquivarNaPagina(this._creaHelper, dadosForm.descricao, this._modelo.idRmo);
 
-                // F. Sucesso: feedback visual, toast global e fecha o painel
                 this._painelUI.atualizarFeedback('RMO registrada e enviada com sucesso!', 'success');
                 this._ui.toast('RMO enviada e pronta para arquivamento!', 'success');
             } else {
-                // E. Injeta a descrição nas observações da página e aciona o salvar nativo
                 await this._servico.salvarNaPagina(this._creaHelper, dadosForm.descricao);
 
-                // F. Sucesso: feedback visual, toast global e fecha o painel
                 this._painelUI.atualizarFeedback('RMO registrada com sucesso!', 'success');
                 this._ui.toast('RMO registrada com sucesso!', 'success');
             }
-            this._log.success('Controller', 'Payload processado com êxito.', payload);
+            this._log.success('Controller', 'RMO salva localmente no CREA com sucesso.');
 
-            // O painel apenas se oculta (persist=true); o estado do model fica salvo em memória
-            setTimeout(() => {
-                this._painelUI.toggle();
-                this._painelUI.limparFeedback();
-            }, 1200);
+            // E. Sincroniza com o backend local do Python de forma assíncrona (em segundo plano)
+            // Isso previne travamentos caso o Oráculo esteja executando buscas longas na API.
+            const payload = new PayloadRegistroRmo(this._modelo).serializar();
+            this._servico.salvarRmo(payload)
+                .then(() => {
+                    this._log.success('Controller', 'Payload sincronizado com o backend com êxito.', payload);
+                    this._modelo.estaSincronizado = true;
+                    this._modelo.temRegistroPagina = true;
+                    if (this._painelUI.foiConstruido) {
+                        this._painelUI.atualizarStatusSincronizacao(true, true);
+                    }
+                })
+                .catch((erroLocal) => {
+                    this._log.error('Controller', 'Falha na sincronização assíncrona com backend local:', erroLocal);
+                    this._ui.toast('Sincronização local falhou, mas a RMO foi salva no CREA.', 'warning');
+                    this._modelo.estaSincronizado = false;
+                    if (this._painelUI.foiConstruido) {
+                        this._painelUI.atualizarStatusSincronizacao(this._modelo.temRegistroPagina, false);
+                    }
+                });
 
         } catch (erro) {
             // F. Falha: exibe feedback de erro sem fechar o painel
             const mensagemErro = erro.message || 'Erro desconhecido ao salvar. Verifique o console.';
             this._painelUI.atualizarFeedback(mensagemErro, 'error');
-            this._ui.toast('Falha ao salvar. Verifique o console.', 'error');
-            this._log.error('Controller', 'Falha ao processar payload.', erro);
+            this._ui.toast('Falha ao salvar no CREA. Verifique o console.', 'error');
+            this._log.error('Controller', 'Falha ao salvar no CREA.', erro);
 
         } finally {
             // G. Sempre reativa o formulário ao final (sucesso ou falha)
@@ -165,36 +180,48 @@ class RmoRegistradorController {
     // MÉTODOS PRIVADOS (internos ao Controller)
     // ========================================================================
 
-
-
     /**
-     * Consulta silenciosa em background para pré-carregar os dados da RMO.
-     * Atualiza o model e, se o painel já estiver aberto, reconstrói os campos.
+     * Consulta silenciosa em background para pré-carregar os dados da RMO do backend local
+     * e do CREA. Realiza a verificação de sincronismo e pré-preenche a GUI.
      * @private
      */
     async _carregarDadosBackground() {
         try {
+            // 1. Consulta dados no backend local
             const dadosApi = await this._servico.consultarRmo(this._modelo.idRmo);
-
-            // Aplica os dados ao model (null = RMO nova, objeto = RMO existente)
             this._modelo.aplicarDadosApi(dadosApi);
 
-            if (dadosApi) {
-                this._log.success('Controller', `Dados pré-carregados: status="${this._modelo.status.valor}"`);
-            } else {
-                this._log.info('Controller', 'RMO nova — formulário pronto para inserção.');
+            // 2. Consulta observações da página do CREA
+            const obsPagina = await this._servico.obterObservacaoDaPagina(this._creaHelper);
+            this._modelo.analisarSincronizacao(obsPagina);
+
+            // 3. Fallback inteligente: se não há dados no backend mas a página do CREA tem
+            // a observação do script (marcador §), usa a descrição da página como inicial.
+            if (!dadosApi && this._modelo.temRegistroPagina) {
+                const obsLimpa = obsPagina.trim();
+                const indicePrefixo = obsLimpa.indexOf('§');
+                this._modelo.descricao = obsLimpa.substring(indicePrefixo + 1).trim();
+                
+                // Reavalia sincronização com a descrição atualizada
+                this._modelo.analisarSincronizacao(obsPagina);
             }
 
-            // Se o usuário abriu o painel antes da consulta terminar, precisamos reconstruí-lo
-            // com os dados atualizados. O painel destrói o estado anterior e recria limpo.
-            // Como persist=true e o painel já existe, apenas reabrir não atualiza os campos.
-            // Por isso, se estiver visível, atualizamos silenciosamente os campos.
+            if (dadosApi) {
+                this._log.success('Controller', `Dados pré-carregados do backend: status="${this._modelo.status.valor}"`);
+            } else {
+                this._log.info('Controller', 'RMO nova no backend.');
+            }
+
+            this._log.info('Controller', `Status de sincronização da RMO: temRegistro=${this._modelo.temRegistroPagina}, sincronizado=${this._modelo.estaSincronizado}`);
+
+            // 4. Se o painel já foi construído, atualiza o status de sincronização na UI
             if (this._painelUI.foiConstruido) {
-                this._log.info('Controller', 'Painel já aberto — não é necessário reconstruir. Dados refletidos no próximo toggle.');
+                this._painelUI.atualizarStatusSincronizacao(this._modelo.temRegistroPagina, this._modelo.estaSincronizado);
             }
 
         } catch (erro) {
             this._modelo.aplicarDadosApi(null); // Define como RMO nova em caso de erro de rede
+            this._modelo.analisarSincronizacao("");
             this._log.error('Controller', 'Falha no carregamento background. Formulário iniciado em modo de inserção.', erro);
         }
     }

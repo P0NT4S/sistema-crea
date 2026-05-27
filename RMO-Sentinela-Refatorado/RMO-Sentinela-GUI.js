@@ -256,7 +256,7 @@ class TabelaRmos {
             }
             table.dataTable tbody tr td {
                 padding: 10px 16px !important;
-                height:55px !important;
+                height:65px !important;
                 vertical-align: middle !important;
                 border-top: 1px solid rgba(226, 232, 240, 0.7) !important;
                 border-right: none !important;

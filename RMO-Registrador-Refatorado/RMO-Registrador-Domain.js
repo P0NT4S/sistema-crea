@@ -91,11 +91,14 @@ class RmoRegistroModel {
      * @param {string|null} idRmo - ID numérico da RMO identificada na página.
      */
     constructor(idRmo = null) {
-        this.idRmo     = idRmo;
-        this.fiscal    = '---';
-        this.status    = new StatusRmo(null); // Começa sem status selecionado
-        this.descricao = '';
-        this.carregado = false; // Flag: indica se os dados já vieram da API
+        this.idRmo            = idRmo;
+        this.fiscal           = '---';
+        this.status           = new StatusRmo(null); // Começa sem status selecionado
+        this.descricao        = '';
+        this.carregado        = false; // Flag: indica se os dados já vieram da API
+        this.observacaoPagina = '';    // Observação bruta atual da página do CREA
+        this.temRegistroPagina = false; // Flag: indica se a página já possui a marcação "§"
+        this.estaSincronizado = false; // Flag: indica se a descrição da página e do backend coincidem
     }
 
     /**
@@ -113,6 +116,32 @@ class RmoRegistroModel {
             this.descricao = dadosApi.descricao || '';
         }
         this.carregado = true;
+    }
+
+    /**
+     * Analisa as observações atuais da página do CREA para determinar se
+     * já existe um registro do script e se ele está em sincronia com o backend.
+     *
+     * @param {string} obsPagina - Texto bruto das observações da página do CREA.
+     */
+    analisarSincronizacao(obsPagina) {
+        this.observacaoPagina = obsPagina || "";
+        const obsLimpa = this.observacaoPagina.trim();
+        
+        // Verifica se o texto de observações contém o prefixo demarcador "§"
+        const indicePrefixo = obsLimpa.indexOf('§');
+        this.temRegistroPagina = (indicePrefixo !== -1);
+        
+        if (this.temRegistroPagina) {
+            // Extrai a descrição (tudo após o caractere "§")
+            const descricaoPagina = obsLimpa.substring(indicePrefixo + 1).trim();
+            const descricaoBackend = (this.descricao || "").trim();
+            
+            // Está sincronizado se a descrição da página (sem o demarcador) for idêntica à do backend
+            this.estaSincronizado = (descricaoPagina === descricaoBackend);
+        } else {
+            this.estaSincronizado = false;
+        }
     }
 
     /**
