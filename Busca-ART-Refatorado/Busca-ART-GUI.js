@@ -830,9 +830,17 @@ class PainelBuscaControle {
         const statusBoxObj = this._uiFacade.createStatusBox(this._conteinerResultados, msgFinal, variantFinal);
 
         if (tipo === 'loading') {
-            // Loading vai no topo e no fundo (se já houver cards) para visibilidade
+            // Loading vai no topo
             this._conteinerResultados.insertBefore(statusBoxObj.getNode(), this._conteinerResultados.firstChild);
-            if (this._resultados.length > 0) {
+            
+            const cards = this._conteinerResultados.querySelectorAll('.pts-card');
+            const panelBody = this._conteinerResultados.closest('.pts-panel-body');
+            let temScroll = false;
+            if (panelBody) {
+                temScroll = panelBody.scrollHeight > panelBody.clientHeight;
+            }
+
+            if (cards.length > 0 && temScroll) {
                 const statusBoxBottom = this._uiFacade.createStatusBox(this._conteinerResultados, msgFinal, variantFinal);
                 this._conteinerResultados.appendChild(statusBoxBottom.getNode());
             }

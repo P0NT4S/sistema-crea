@@ -4,6 +4,55 @@
    ========================================================================== */
 
 /**
+ * Traduz erros do portal corporativo para mensagens amigáveis em português.
+ * @param {Error|Object} err - Erro lançado ou objeto de erro retornado.
+ * @returns {string} Mensagem de erro amigável.
+ */
+function obterFeedbackErroCorporativo(err) {
+    if (!err) return "Erro desconhecido ao acessar o Portal Corporativo.";
+    const msg = err.message || String(err);
+    if (msg.includes("Network Error") || msg.includes("Failed to fetch") || msg.includes("NetworkError") || msg.includes("Falha na conexão de rede")) {
+        return "Erro de conexão de rede. Verifique se você está conectado à rede corporativa/intranet do CREA.";
+    }
+    if (msg.includes("timeout") || msg.includes("Timeout") || msg.includes("Tempo de requisição esgotado")) {
+        return "Tempo limite de conexão esgotado (Timeout) ao tentar acessar o portal corporativo.";
+    }
+    if (msg.includes("401") || msg.includes("Unauthorized")) {
+        return "Sessão expirada ou não autorizada no Portal Corporativo. Por favor, refaça o login.";
+    }
+    if (msg.includes("403") || msg.includes("Forbidden")) {
+        return "Acesso negado (403) ao Portal Corporativo.";
+    }
+    if (msg.includes("500") || msg.includes("502") || msg.includes("503")) {
+        return "O servidor do Portal Corporativo apresentou instabilidade (Erro 5xx). Tente novamente em instantes.";
+    }
+    return `Falha no Portal Corporativo: ${msg}`;
+}
+
+/**
+ * Traduz erros da BrasilAPI para mensagens amigáveis em português.
+ * @param {Error|Object} err - Erro lançado ou objeto de erro.
+ * @returns {string} Mensagem de erro amigável.
+ */
+function obterFeedbackErroBrasilAPI(err) {
+    if (!err) return "Erro desconhecido ao acessar a BrasilAPI.";
+    const msg = err.message || String(err);
+    if (msg.includes("Network Error") || msg.includes("Failed to fetch") || msg.includes("NetworkError") || msg.includes("Falha na conexão de rede")) {
+        return "Falha de rede ao se comunicar com a BrasilAPI. Verifique sua conexão com a internet.";
+    }
+    if (msg.includes("timeout") || msg.includes("Timeout") || msg.includes("Tempo de requisição esgotado")) {
+        return "Tempo limite esgotado ao se comunicar com a BrasilAPI.";
+    }
+    if (msg.includes("404") || msg.includes("não localizado") || msg.includes("not found")) {
+        return "CNPJ não localizado na base de dados da BrasilAPI (Receita Federal).";
+    }
+    if (msg.includes("400") || msg.includes("invalid") || msg.includes("inválido")) {
+        return "Dados inválidos enviados para a BrasilAPI.";
+    }
+    return `Falha na BrasilAPI: ${msg}`;
+}
+
+/**
  * @class EstadoPaginacao
  * @description Mantém o controle de estado e limites do loop de paginação.
  */
@@ -203,8 +252,8 @@ class FiltroPorContrato extends FiltroGeralBase {
                         const indexAno = obs.indexOf(this.anoContrato);
                         let snippet = obs;
                         if (indexAno !== -1) {
-                            const start = Math.max(0, indexAno - 30);
-                            const end = Math.min(obs.length, indexAno + 50);
+                            const start = Math.max(0, indexAno - 20);
+                            const end = Math.min(obs.length, indexAno + this.anoContrato.length + 20);
                             snippet = obs.substring(start, end);
                             if (start > 0) snippet = "..." + snippet;
                             if (end < obs.length) snippet = snippet + "...";
@@ -332,8 +381,14 @@ class FiltroPorProfissional extends FiltroGeralBase {
     async getOverrideUrl(paginaIndex) {
         if (!this._urlArtListBase) {
             // Passo A: Requisição Inicial (API Corporativa)
-            const jsonCorp = await this._CommBridge.apiART.buscarCorporativo(this.campo, this.valor);
-            if (!jsonCorp.resultados || jsonCorp.resultados.length === 0) {
+            let jsonCorp;
+            try {
+                jsonCorp = await this._CommBridge.apiART.buscarCorporativo(this.campo, this.valor);
+            } catch (e) {
+                throw new Error(obterFeedbackErroCorporativo(e));
+            }
+
+            if (!jsonCorp || !jsonCorp.resultados || jsonCorp.resultados.length === 0) {
                 throw new Error("Nenhum profissional ou empresa localizado com estes dados.");
             }
 
@@ -341,7 +396,13 @@ class FiltroPorProfissional extends FiltroGeralBase {
             const linkCorp = jsonCorp.resultados[0].corpLink.replace(/\\/g, '');
 
             // Passo C: Raspagem em Background
-            const htmlCorp = await this._CommBridge.apiART.fetchText(linkCorp);
+            let htmlCorp;
+            try {
+                htmlCorp = await this._CommBridge.apiART.fetchText(linkCorp);
+            } catch (e) {
+                throw new Error(obterFeedbackErroCorporativo(e));
+            }
+
             const linkArt = this._Utils.crea.corp.extrairLinkArt(htmlCorp);
             const perfilDetalhado = this._Utils.crea.corp.extrairPerfil(htmlCorp);
             if (!linkArt) throw new Error("Acesso à página de ARTs não disponível no portal corporativo deste registro.");
@@ -490,14 +551,17 @@ class ConsultaEmpresaCnae extends IFiltroBusca {
     async processarPagina() {
         // Busca CREA Corporativo
         let dataCrea = {};
+        let erroCorp = null;
         try {
             dataCrea = await this._CommBridge.apiART.buscarCorporativo('cpf_cnpj', this.cnpj);
         } catch (e) {
+            erroCorp = e;
             console.warn("[ConsultaEmpresaCnae] Falha ao buscar no portal corporativo", e);
         }
 
         // Retry BrasilAPI 3 vezes
         let dataCnae = null;
+        let erroBrasil = null;
         for (let i = 1; i <= 3; i++) {
             try {
                 const res = await this._CommBridge.apiPublica.consultarCnpj(this.cnpj);
@@ -505,8 +569,10 @@ class ConsultaEmpresaCnae extends IFiltroBusca {
                     throw new Error(res.message || "Erro retornado pela BrasilAPI");
                 }
                 dataCnae = res;
+                erroBrasil = null;
                 break;
             } catch (e) {
+                erroBrasil = e;
                 if (i === 3) {
                     console.warn(`[ConsultaEmpresaCnae] BrasilAPI falhou após 3 tentativas.`, e);
                 } else {
@@ -515,10 +581,12 @@ class ConsultaEmpresaCnae extends IFiltroBusca {
             }
         }
 
-        const registroCrea = dataCrea.resultados && dataCrea.resultados.length > 0 ? dataCrea.resultados[0] : null;
+        const registroCrea = dataCrea?.resultados && dataCrea.resultados.length > 0 ? dataCrea.resultados[0] : null;
 
         if (!dataCnae && !registroCrea) {
-            throw new Error("Não foi possível localizar dados da empresa na BrasilAPI nem no CREA.");
+            const detalheCorp = erroCorp ? obterFeedbackErroCorporativo(erroCorp) : "Nenhum resultado retornado pelo portal corporativo.";
+            const detalheBrasil = erroBrasil ? obterFeedbackErroBrasilAPI(erroBrasil) : "Nenhum resultado retornado pela BrasilAPI.";
+            throw new Error(`Não foi possível localizar dados da empresa:\n- [CREA]: ${detalheCorp}\n- [BrasilAPI]: ${detalheBrasil}`);
         }
 
         const razaoSocialFallback = (dataCnae && dataCnae.razao_social) || (registroCrea && registroCrea.nome) || 'Razão Social não identificada';

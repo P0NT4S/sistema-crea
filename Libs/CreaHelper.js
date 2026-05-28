@@ -387,7 +387,7 @@ class ArtParser {
          * Lógica interna de checagem.
          * Encontra o 'ano', verifica se não é uma data e se a regex casa num range de proximidade.
          */
-        const checkLogic = (txt) => {
+        const checkLogic = (txt, range = 50) => {
             if (!txt || !txt.includes(ano)) return false;
             
             let pos = -1;
@@ -398,9 +398,9 @@ class ArtParser {
                     continue; // Ignora, pois é uma data com dia e mês (DD/MM/)
                 }
                 
-                // Define um range de proximidade máximo (50 caracteres antes e depois)
-                const start = Math.max(0, pos - 50);
-                const end = Math.min(txt.length, pos + ano.length + 50);
+                // Define um range de proximidade máximo (range caracteres antes e depois)
+                const start = Math.max(0, pos - range);
+                const end = Math.min(txt.length, pos + ano.length + range);
                 
                 // Recorta o bloco substituindo o ano para não dar falso positivo com ele mesmo
                 const chunk = txt.substring(start, end);
@@ -413,8 +413,8 @@ class ArtParser {
             return false;
         };
 
-        if (checkLogic(t1)) return { match: true, foundText: "Campo Contrato" };
-        if (checkLogic(t2)) return { match: true, foundText: "Campo Observações" };
+        if (checkLogic(t1, 50)) return { match: true, foundText: "Campo Contrato" };
+        if (checkLogic(t2, 20)) return { match: true, foundText: "Campo Observações" };
         
         return { match: false };
     }
@@ -688,6 +688,18 @@ class RmoInterceptor {
                     controleAlvo.patchValue(dadosEnvolvido);
                     if (inst.changeDetectorRef) inst.changeDetectorRef.detectChanges();
                     
+                    // Helper para preencher endereco_numero caso esteja vazio
+                    const preencherNumeroSeVazio = () => {
+                        const numCtrl = controleAlvo.get('endereco_numero');
+                        if (numCtrl) {
+                            const val = numCtrl.value;
+                            if (val === null || val === undefined || (typeof val === 'string' && val.trim() === '')) {
+                                numCtrl.setValue('S/N');
+                                if (inst.changeDetectorRef) inst.changeDetectorRef.detectChanges();
+                            }
+                        }
+                    };
+
                     // 3. Simula a "lupa" (busca na API) automaticamente
                     if (buscarPor && typeof inst.buscarEntidade === 'function') {
                         // Delay necessário para dar tempo ao DOM de processar o input
@@ -696,15 +708,20 @@ class RmoInterceptor {
                                 const res = await inst.buscarEntidade({ tipo: 'envolvido', busca: buscarPor, index: novoIndice });
                                 if (res === false && fallbackBusca) {
                                     this.core.log.warning("RmoInterceptor", `Busca por '${buscarPor}' retornou false, tentando fallback...`);
-                                    inst.buscarEntidade({ tipo: 'envolvido', busca: fallbackBusca, index: novoIndice });
+                                    await inst.buscarEntidade({ tipo: 'envolvido', busca: fallbackBusca, index: novoIndice });
                                 }
                             } catch (e) {
                                 if (fallbackBusca) {
                                     this.core.log.warning("RmoInterceptor", `Busca por '${buscarPor}' falhou, tentando fallback...`);
-                                    inst.buscarEntidade({ tipo: 'envolvido', busca: fallbackBusca, index: novoIndice });
+                                    await inst.buscarEntidade({ tipo: 'envolvido', busca: fallbackBusca, index: novoIndice });
                                 }
+                            } finally {
+                                preencherNumeroSeVazio();
                             }
                         }, 100);
+                    } else {
+                        // Comportamento de preenchimento quando a busca não é engatilhada (patch manual/direto)
+                        preencherNumeroSeVazio();
                     }
 
                     this.core.log.success("RmoInterceptor", `Automação de Envolvido injetada no índice [${novoIndice}].`);

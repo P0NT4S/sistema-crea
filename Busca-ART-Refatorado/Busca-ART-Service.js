@@ -14,13 +14,13 @@ class VarredorDeArtsService {
      */
     constructor(commBridge) {
         this._commBridge = commBridge;
-        
+
         // Coleção de Callbacks (Hooks) para a interface/controller escutar passivamente
-        this.onStatusMudou = (tipo, mensagem) => {}; // tipo: 'loading', 'success', 'warning', 'error'
-        this.onResultadosEncontrados = (resultadosTratados) => {};
-        this.onPausadoParaContinuar = (estadoPaginacao) => {};
-        this.onFimDaBusca = (mensagem) => {};
-        this.onPerfilEncontrado = (perfil) => {};
+        this.onStatusMudou = (tipo, mensagem) => { }; // tipo: 'loading', 'success', 'warning', 'error'
+        this.onResultadosEncontrados = (resultadosTratados) => { };
+        this.onPausadoParaContinuar = (estadoPaginacao) => { };
+        this.onFimDaBusca = (mensagem) => { };
+        this.onPerfilEncontrado = (perfil) => { };
     }
 
     /**
@@ -45,7 +45,7 @@ class VarredorDeArtsService {
                     const paramsStr = estrategia.construirQueryParams(pag).toString();
                     url = `${this._commBridge.urlBaseArt}?${paramsStr}`;
                 }
-                
+
                 let htmlParaProcessar = "";
 
                 // 2. Fetch Primário (Pula se a estratégia retornar 'skip')
@@ -54,7 +54,7 @@ class VarredorDeArtsService {
                     htmlParaProcessar = response.responseText;
                 }
 
-                if (estado.isCancelado) break; 
+                if (estado.isCancelado) break;
 
                 // 3. Processamento Dinâmico
                 const resultado = await estrategia.processarPagina(htmlParaProcessar, rmoIdAtual, estado);
@@ -92,15 +92,15 @@ class VarredorDeArtsService {
                 }
 
                 estado.avancar();
-                
+
                 // Delay Anti-Ban para requests seguidas do motor
-                await new Promise(r => setTimeout(r, 600)); 
+                await new Promise(r => setTimeout(r, 600));
             }
 
             // Exaustão do "While" (Três saídas)
             if (estado.isCancelado) {
                 this.onFimDaBusca('Busca interrompida pelo usuário.');
-                return; 
+                return;
             }
 
             if (estado.atingiuLimiteDoCiclo() && estado.paginaAtual <= estado.totalPaginas) {
@@ -110,7 +110,7 @@ class VarredorDeArtsService {
 
         } catch (error) {
             console.error(error);
-            this.onStatusMudou('error', `Erro crítico do motor de varredura: ${error.message}`);
+            this.onStatusMudou('error', `Erro de varredura: ${error.message}`);
         }
     }
 }
