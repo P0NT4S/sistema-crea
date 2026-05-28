@@ -235,6 +235,18 @@ class RmoRegistradorService {
 
             this._log.success('RmoService', 'RMO enviada no sistema nativo com sucesso. Iniciando verificação...');
 
+            // Garante que a sessão no SGF esteja ativa antes de consultar
+            let sessaoAtiva = await this._comm.apiART.verificarSessaoMovimentacao();
+            if (!sessaoAtiva) {
+                this._log.warning('RmoService', 'Sessão do SGF inativa. Tentando aquecer sessão automaticamente...');
+                sessaoAtiva = await this._comm.apiART.aquecerSessaoMovimentacao();
+                if (!sessaoAtiva) {
+                    this._log.warning('RmoService', 'Não foi possível reativar a sessão do SGF automaticamente.');
+                } else {
+                    this._log.success('RmoService', 'Sessão do SGF aquecida e ativa.');
+                }
+            }
+
             // Verificação em até 5 tentativas (a cada 1s) para compensar o delay do sistema
             const urlBusca = `https://sgf.creadf.org.br/admin/documento/buscar?documento=${idRmo}`;
             const maxTentativas = 5;
@@ -243,7 +255,23 @@ class RmoRegistradorService {
             for (let tentativa = 1; tentativa <= maxTentativas; tentativa++) {
                 this._log.info('RmoService', `Consultando página de movimentações... Tentativa ${tentativa}/${maxTentativas}`);
                 
-                const htmlResp = await this._comm.apiART.fetchText(urlBusca, "GET");
+                let htmlResp;
+                try {
+                    htmlResp = await this._comm.apiART.fetchText(urlBusca, "GET");
+                } catch (erroBusca) {
+                    // Se der erro de autenticação (HTTP 401), tentamos realizar o aquecimento em tempo real e re-executar
+                    if (erroBusca.message && erroBusca.message.includes('401')) {
+                        this._log.warning('RmoService', 'Sessão expirou ou retornou 401 durante a busca. Tentando re-aquecer a sessão...');
+                        const aquecida = await this._comm.apiART.aquecerSessaoMovimentacao();
+                        if (aquecida) {
+                            htmlResp = await this._comm.apiART.fetchText(urlBusca, "GET");
+                        } else {
+                            throw erroBusca;
+                        }
+                    } else {
+                        throw erroBusca;
+                    }
+                }
 
                 if (htmlResp.includes("Nenhum documento encontrado.")) {
                     if (tentativa === maxTentativas) {

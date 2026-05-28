@@ -328,6 +328,48 @@ class CreaAPI {
     }
 
     /**
+     * "Aquece" a sessão de movimentações (SGF) abrindo a página correspondente
+     * em segundo plano (aba inativa) para que o navegador processe o fluxo
+     * de autenticação SSO e cookies, fechando-a em seguida.
+     *
+     * @param {number} [tempoAguardarMs=5000] - Tempo de espera em milissegundos para os cookies assentarem.
+     * @returns {Promise<boolean>} Retorna true se após o aquecimento a sessão estiver ativa.
+     */
+    async aquecerSessaoMovimentacao(tempoAguardarMs = 5000) {
+        this.bridge.log.info('CreaAPI', 'Iniciando aquecimento automático da sessão de movimentações...');
+
+        if (typeof GM_openInTab === 'undefined') {
+            this.bridge.log.warning('CreaAPI', 'GM_openInTab não está disponível no contexto atual do Userscript.');
+            return false;
+        }
+
+        return new Promise((resolve) => {
+            try {
+                const tab = GM_openInTab('https://sgf.creadf.org.br/admin/movimentacao', {
+                    active: false,
+                    insert: true,
+                    loadInBackground: true
+                });
+
+                setTimeout(async () => {
+                    try {
+                        tab.close();
+                        this.bridge.log.info('CreaAPI', 'Aba de movimentações fechada. Verificando nova sessão...');
+                        const ativa = await this.verificarSessaoMovimentacao();
+                        resolve(ativa);
+                    } catch (err) {
+                        this.bridge.log.error('CreaAPI', 'Erro ao fechar aba do SGF ou validar sessão no aquecimento.', err);
+                        resolve(false);
+                    }
+                }, tempoAguardarMs);
+            } catch (err) {
+                this.bridge.log.error('CreaAPI', 'Falha ao abrir aba do SGF em background.', err);
+                resolve(false);
+            }
+        });
+    }
+
+    /**
      * Autentica no portal Corporativo.
      * Passo 1: GET na página de login para extrair o token CSRF (campo _token).
      * Passo 2: POST ao endpoint /autentica com o token e as credenciais.
